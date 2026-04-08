@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import OpportunityCard from "../components/dashboard/OpportunityCard";
 import { fetchStudentProfile } from "../services/studentService";
 import { evaluateEligibility } from "../utils/eligibilityEngine";
+import { opportunitiesList } from "../data/dummyOpportunities";
 import { getRecommendedResources } from "../utils/recommendationEngine";
 import { Search, X, CheckCircle, AlertTriangle, XCircle, Briefcase, FileText, Users, Link as LinkIcon, BookOpen, ExternalLink } from "lucide-react";
 import ResourceModal from "../components/dashboard/ResourceModal";
@@ -42,7 +43,7 @@ export default function Opportunities() {
 
   // Augment opportunities with intelligent evaluation logic
   const augmentedOpportunities = useMemo(() => {
-    return (require("../data/dummyOpportunities").opportunitiesList || []).map((opp) => {
+    return opportunitiesList.map((opp) => {
       const evalResult = evaluateEligibility(profile, opp);
       return {
         ...opp,
