@@ -6,13 +6,17 @@ const mongoose = require('mongoose');
 const studentSchema = new mongoose.Schema({
   // Personal Info
   fullName: { type: String, required: true },
+  name: { type: String }, // To support admin side legacy fields
   enrollmentNumber: { type: String, required: true, unique: true },
+  email: { type: String }, // To support admin side legacy fields
   collegeEmail: { type: String, required: true },
   personalEmail: { type: String, required: true },
   phone: { type: String, required: true },
   gender: { type: String, required: true },
 
   // Academic Info
+  course: { type: String }, // Admin compatibility
+  year: { type: String }, // Admin compatibility
   degree: { type: String, required: true },
   branch: { type: String, required: true },
   semester: { type: String, required: true },
@@ -60,8 +64,19 @@ const studentSchema = new mongoose.Schema({
   additionalProfilePlatform: { type: String },
   additionalProfileLink: { type: String },
   profileVisibility: { type: String, required: true },
+
+  // Admin status tracking
+  status: { type: String, default: "Not Placed" }
+
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields
+});
+
+// Middleware to sync full name to admin name where needed
+studentSchema.pre('save', function(next) {
+  if (this.fullName && !this.name) this.name = this.fullName;
+  if (this.collegeEmail && !this.email) this.email = this.collegeEmail;
+  next();
 });
 
 module.exports = mongoose.model('Student', studentSchema);

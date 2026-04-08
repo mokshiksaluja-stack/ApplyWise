@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
-import OpportunityCard from "../components/dashboard/OpportunityCard";
-import { fetchStudentProfile } from "../services/studentService";
-import { evaluateEligibility } from "../utils/eligibilityEngine";
-import { opportunitiesList } from "../data/dummyOpportunities";
-import { getRecommendedResources } from "../utils/recommendationEngine";
+import OpportunityCard from "../../components/dashboard/OpportunityCard";
+import { fetchStudentProfile } from "../../services/studentService";
+import { evaluateEligibility } from "../../utils/eligibilityEngine";
+import { opportunitiesList } from "../../data/dummyOpportunities";
+import { getRecommendedResources } from "../../utils/recommendationEngine";
 import { Search, X, CheckCircle, AlertTriangle, XCircle, Briefcase, FileText, Users, Link as LinkIcon, BookOpen, ExternalLink } from "lucide-react";
-import ResourceModal from "../components/dashboard/ResourceModal";
+import ResourceModal from "../../components/dashboard/ResourceModal";
 
 export default function Opportunities() {
   const [profile, setProfile] = useState(null);

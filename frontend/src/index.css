@@ -4,9 +4,17 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: "Inter", sans-serif;
-  background: #171717;
+@layer base {
+  :root {
+    --color-primary: #2563EB;
+    --color-background: #F5F7FA;
+    --color-card: #FFFFFF;
+  }
+  
+  body {
+    background-color: var(--color-background);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
 }
 
 .editorial-grid {
@@ -37,40 +45,12 @@ body {
 
 .grid-tint-blue {
   background-color: #dff4fb;
-  background-image:
-    linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px);
-  background-size: 18px 18px;
 }
 
 .grid-tint-green {
   background-color: #dfeec0;
-  background-image:
-    linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px);
-  background-size: 18px 18px;
 }
 
 .grid-tint-pink {
   background-color: #f8dce5;
-  background-image:
-    linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px);
-  background-size: 18px 18px;
 }
-
-.noise-block {
-  background:
-    linear-gradient(135deg, rgba(0,114,128,0.35), rgba(255,255,255,0.1)),
-    repeating-linear-gradient(
-      135deg,
-      rgba(0,0,0,0.15) 0px,
-      rgba(0,0,0,0.15) 2px,
-      rgba(255,255,255,0.15) 2px,
-      rgba(255,255,255,0.15) 7px
-    );
-}
-
-/* @tailwind base;
-@tailwind components;
-@tailwind utilities; */

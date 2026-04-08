@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Clock, CheckCircle, XCircle, ChevronRight, X, User, Building, MapPin, Calendar, FileText, Info, Award, Search } from "lucide-react";
-import { applicationsData } from "../data/dummyApplications";
+import { applicationsData } from "../../data/dummyApplications";
 
 export default function Applications() {
   const [selectedApp, setSelectedApp] = useState(null);
@@ -82,7 +82,7 @@ export default function Applications() {
                 <span className={`flex items-center rounded-full px-3 py-1 text-xs font-bold ${getStatusBadge(app.status)}`}>
                   {getStatusIcon(app.status)}
                   {app.status}
-                </span>
+             </span>
               </div>
               <p className="mt-1 text-base font-medium text-gray-600">{app.role}</p>
               

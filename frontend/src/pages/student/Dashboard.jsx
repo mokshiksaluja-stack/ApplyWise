@@ -1,20 +1,20 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import ProfileStatCard from "../components/layouts/ProfileStatCard";
-import OpportunityCard from "../components/dashboard/OpportunityCard";
-import NotificationCard from "../components/dashboard/NotificationCard";
-import ApplicationCard from "../components/dashboard/ApplicationCard";
-import ReadinessCard from "../components/dashboard/ReadinessCard";
+import ProfileStatCard from "../../components/layouts/ProfileStatCard";
+import OpportunityCard from "../../components/dashboard/OpportunityCard";
+import NotificationCard from "../../components/dashboard/NotificationCard";
+import ApplicationCard from "../../components/dashboard/ApplicationCard";
+import ReadinessCard from "../../components/dashboard/ReadinessCard";
 
-import { fetchStudentProfile } from "../services/studentService";
-import { calculateProfileCompletion, calculateReadinessScore } from "../utils/studentMetrics";
-import { evaluateEligibility } from "../utils/eligibilityEngine";
-import { getDashboardRecommendedResources } from "../utils/recommendationEngine";
+import { fetchStudentProfile } from "../../services/studentService";
+import { calculateProfileCompletion, calculateReadinessScore } from "../../utils/studentMetrics";
+import { evaluateEligibility } from "../../utils/eligibilityEngine";
+import { getDashboardRecommendedResources } from "../../utils/recommendationEngine";
 import { BookOpen, ExternalLink, FileText } from "lucide-react";
-import ResourceModal from "../components/dashboard/ResourceModal";
+import ResourceModal from "../../components/dashboard/ResourceModal";
 
-import { opportunitiesList as opportunities } from "../data/dummyOpportunities";
-import { initialNotifications as notifications } from "../data/dummyNotifications";
+import { opportunitiesList as opportunities } from "../../data/dummyOpportunities";
+import { initialNotifications as notifications } from "../../data/dummyNotifications";
 
 export default function Dashboard() {
   const [profile, setProfile] = useState(null);

@@ -1,13 +1,28 @@
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { useNavigate, Link } from "react-router-dom";
 import { LogIn } from "lucide-react";
+import { loginAPI } from '../../services/api';
 
 export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Dummy login: redirect directly to the dashboard
-    navigate("/");
+    try {
+      const { data } = await loginAPI({ email, password });
+      localStorage.setItem('token', data.token);
+      // Determine user role if available, or just navigate to a default
+      if (data.role === 'admin') {
+         navigate('/admin/dashboard');
+      } else {
+         navigate('/student/dashboard');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed');
+    }
   };
 
   return (
@@ -27,6 +42,7 @@ export default function Login() {
 
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-5">
+          {error && <div className="text-red-500 text-sm text-center bg-red-50 p-2 rounded">{error}</div>}
           <div>
             <label className="mb-2 block text-sm font-semibold text-gray-700">
               College Email
@@ -34,7 +50,8 @@ export default function Login() {
             <input
               type="email"
               placeholder="e.g. student@college.edu"
-              defaultValue="student@college.edu"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               required
               className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
             />
@@ -47,7 +64,8 @@ export default function Login() {
             <input
               type="password"
               placeholder="••••••••"
-              defaultValue="password123"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
               required
               className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
             />
@@ -73,9 +91,9 @@ export default function Login() {
 
         <div className="mt-8 text-center text-sm font-medium text-gray-500">
           Don't have an account?{" "}
-          <a href="#" className="font-bold text-blue-600 hover:text-blue-700">
+          <Link to="/signup" className="font-bold text-blue-600 hover:text-blue-700">
             Sign up
-          </a>
+          </Link>
         </div>
       </div>
     </div>
