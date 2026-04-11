@@ -14,8 +14,13 @@ export default function Login() {
     try {
       const { data } = await loginAPI({ email, password });
       localStorage.setItem('token', data.token);
+      
+      if (data.user && data.user.id) {
+          localStorage.setItem('studentId', data.user.id);
+      }
+      
       // Determine user role if available, or just navigate to a default
-      if (data.role === 'admin') {
+      if (data.user?.role === 'admin') {
          navigate('/admin/dashboard');
       } else {
          navigate('/student/dashboard');

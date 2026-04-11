@@ -107,7 +107,7 @@ export default function Dashboard() {
     <h2 className="text-2xl font-semibold text-gray-900">
       Recommended Opportunities
     </h2>
-    <Link to="/opportunities" className="text-sm font-medium text-blue-600 hover:text-blue-700">
+    <Link to="/student/opportunities" className="text-sm font-medium text-blue-600 hover:text-blue-700">
       View all
     </Link>
   </div>

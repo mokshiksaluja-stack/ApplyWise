@@ -3,9 +3,9 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { Home, Briefcase, FileText, CheckSquare, Calendar, Users, BarChart2, LogOut } from 'lucide-react';
 
 const navItems = [
-  { path: '/dashboard', icon: Home, label: 'Dashboard' },
-  { path: '/opportunities', icon: Briefcase, label: 'Opportunities' },
-  { path: '/applications', icon: FileText, label: 'Applications' },
+  { path: '/admin/dashboard', icon: Home, label: 'Dashboard' },
+  { path: '/admin/opportunities', icon: Briefcase, label: 'Opportunities' },
+  { path: '/admin/applications', icon: FileText, label: 'Applications' },
   { path: '/tasks', icon: CheckSquare, label: 'Tasks' },
   { path: '/interviews', icon: Calendar, label: 'Interviews' },
   { path: '/coordinators', icon: Users, label: 'Coordinators' },
@@ -17,8 +17,8 @@ const Sidebar = () => {
   return (
     <aside className="w-64 h-screen bg-white hidden md:flex flex-col border-r border-gray-100 flex-shrink-0 fixed left-0 top-0 z-10">
       <div className="p-6 flex items-center gap-3">
-        <div className="w-8 h-8 bg-blue-600 rounded-md text-white flex items-center justify-center font-bold text-lg cursor-pointer" onClick={() => navigate('/dashboard')}>P</div>
-        <h1 className="font-semibold text-gray-900 leading-tight cursor-pointer" onClick={() => navigate('/dashboard')}>
+        <div className="w-8 h-8 bg-blue-600 rounded-md text-white flex items-center justify-center font-bold text-lg cursor-pointer" onClick={() => navigate('/admin/dashboard')}>P</div>
+        <h1 className="font-semibold text-gray-900 leading-tight cursor-pointer" onClick={() => navigate('/admin/dashboard')}>
           Placement<br/><span className="text-sm font-normal text-gray-500">& Internship</span>
         </h1>
       </div>

@@ -15,15 +15,12 @@ const interviewRoutes = require('./routes/interviewRoutes');
 const app = express();
 
 // Middleware
-// Accept requests from both React dev servers and default ports
-const corsOptions = {
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000'],
+// Allow all origins for seamless local development (Vite can run on 5174, 5175 etc)
+app.use(cors({
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-  optionsSuccessStatus: 200 
-};
-app.use(cors(corsOptions));
+}));
 app.use(express.json());
 
 // Routes

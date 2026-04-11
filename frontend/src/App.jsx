@@ -15,13 +15,14 @@ import Notifications from "./pages/Notifications";
 // Splitted Student Dashboard
 import StudentDashboard from "./pages/student/Dashboard";
 import StudentOpportunities from "./pages/student/Opportunities";
+import StudentOpportunityDetail from "./pages/student/OpportunityDetail";
 import StudentApplications from "./pages/student/Applications";
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminOpportunities from './pages/admin/Opportunities';
+import CreateOpportunity from './pages/admin/CreateOpportunity';
 import AdminApplications from './pages/admin/Applications';
-import JobDetail from './pages/JobDetail';
 import TaskDetail from './pages/TaskDetail';
 import Tasks from './pages/Tasks';
 import Interviews from './pages/Interviews';
@@ -50,6 +51,7 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/edit" element={<ProfileWizard />} />
             <Route path="/student/opportunities" element={<StudentOpportunities />} />
+            <Route path="/student/opportunities/:id" element={<StudentOpportunityDetail />} />
             <Route path="/student/applications" element={<StudentApplications />} />
             <Route path="/student/prep-center" element={<PreparationCenter />} />
             <Route path="/notifications" element={<Notifications />} />
@@ -58,6 +60,7 @@ function App() {
           {/* Admin Routes */}
           <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/opportunities" element={<ProtectedRoute><AdminOpportunities /></ProtectedRoute>} />
+          <Route path="/admin/opportunities/new" element={<ProtectedRoute><CreateOpportunity /></ProtectedRoute>} />
           <Route path="/admin/applications" element={<ProtectedRoute><AdminApplications /></ProtectedRoute>} />
           
           <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
@@ -67,7 +70,6 @@ function App() {
           <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
           
           {/* Detail Routes */}
-          <Route path="/job/:id" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
           <Route path="/task/:id" element={<ProtectedRoute><TaskDetail /></ProtectedRoute>} />
           <Route path="/messages/:id" element={<ProtectedRoute><MessageDetails /></ProtectedRoute>} />
           

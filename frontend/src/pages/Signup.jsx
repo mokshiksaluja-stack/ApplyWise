@@ -5,15 +5,22 @@ import { signupAPI } from '../services/api';
 export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('student');
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   const handleSignup = async (e) => {
     e.preventDefault();
     try {
-      const { data } = await signupAPI({ email, password });
+      const { data } = await signupAPI({ email, password, role });
       localStorage.setItem('token', data.token);
-      navigate('/dashboard');
+      
+      if (data.user && data.user.id) {
+          localStorage.setItem('studentId', data.user.id);
+      }
+      
+      if (role === 'admin') navigate('/admin/dashboard');
+      else navigate('/student/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Signup failed');
     }
@@ -33,7 +40,13 @@ export default function Signup() {
               <input name="email" type="email" required className="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)} />
             </div>
             <div>
-              <input name="password" type="password" required className="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
+              <input name="password" type="password" required className="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
+            </div>
+            <div>
+              <select name="role" value={role} onChange={e => setRole(e.target.value)} className="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm">
+                 <option value="student">Student</option>
+                 <option value="admin">Admin / Coordinator</option>
+              </select>
             </div>
           </div>
           <div>

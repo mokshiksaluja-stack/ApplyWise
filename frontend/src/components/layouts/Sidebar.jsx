@@ -11,10 +11,10 @@ import {
 } from "lucide-react";
 
 const menuItems = [
-  { name: "Dashboard", path: "/", icon: LayoutDashboard },
+  { name: "Dashboard", path: "/student/dashboard", icon: LayoutDashboard },
   { name: "Profile", path: "/profile", icon: User },
-  { name: "Opportunities", path: "/opportunities", icon: Briefcase },
-  { name: "My Applications", path: "/applications", icon: FileText },
+  { name: "Opportunities", path: "/student/opportunities", icon: Briefcase },
+  { name: "My Applications", path: "/student/applications", icon: FileText },
   { name: "Preparation Center", path: "/student/prep-center", icon: BookOpen },
   { name: "Notifications", path: "/notifications", icon: Bell },
 ];

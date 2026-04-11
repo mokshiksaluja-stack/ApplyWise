@@ -40,23 +40,23 @@ const getStudentProfile = async (req, res) => {
   }
 };
 
-// @desc    Update an existing student profile
+// @desc    Update an existing student profile or create if not exists (upsert)
 // @route   PUT /api/students/profile/:id
 const updateStudentProfile = async (req, res) => {
   try {
     const updatedStudent = await Student.findByIdAndUpdate(
       req.params.id,
       req.body,
-      { new: true, runValidators: true } 
+      { new: true, runValidators: true, upsert: true, setDefaultsOnInsert: true } 
     );
-    if (!updatedStudent) {
-      return res.status(404).json({ message: "Student profile not found" });
-    }
     res.json({
       message: "Student profile updated successfully!",
       student: updatedStudent
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: "A profile with this Enrollment Number or Email already exists." });
+    }
     console.error("Error updating student profile:", error.message);
     res.status(500).json({ message: "Server Error: Could not update profile", error: error.message });
   }

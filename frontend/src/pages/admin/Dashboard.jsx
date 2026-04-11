@@ -96,53 +96,27 @@ const Dashboard = () => {
             {data.stats.map((stat, idx) => {
               let linkTo = '/dashboard';
               if (idx === 0) linkTo = '/students';
-              if (idx === 1) linkTo = '/applications';
+              if (idx === 1) linkTo = '/admin/applications';
               if (idx === 2) linkTo = '/interviews';
               return <StatCard key={stat.id} {...stat} linkTo={linkTo} />;
             })}
           </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 xl:gap-6">
-        <div className="xl:col-span-2 flex flex-col gap-6">
-          <div>
-            <div className="flex justify-between items-center mb-4 tracking-tight">
-              <h3 className="text-[16px] font-bold text-gray-900">Latest Opportunities</h3>
-              <button onClick={() => navigate('/opportunities')} className="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center group cursor-pointer focus:outline-none">
-                View All <ChevronRight className="w-4 h-4 ml-0.5 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {data.opportunities.slice(0, 3).map(opp => (
-                <OpportunityCard key={opp.id} {...opp} />
-              ))}
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 xl:gap-6">
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          {/* Charts Side by Side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <ApplicationChart data={data.applicationOverview} />
+             <TaskDistributionChart data={data.taskDistribution} />
           </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 flex-1">
-            <div className="lg:col-span-2">
-              <div className="flex justify-between items-center mb-4 tracking-tight">
-                <h3 className="text-[16px] font-bold text-gray-900">Latest Opportunities</h3>
-                <button onClick={() => navigate('/opportunities')} className="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center group cursor-pointer focus:outline-none">
-                  View All <ChevronRight className="w-4 h-4 ml-0.5 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 h-[calc(100%-2.5rem)]">
-                {data.opportunities.slice(0, 2).map((opp, idx) => (
-                  <OpportunityCard key={`row2-${idx}`} {...opp} />
-                ))}
-              </div>
-            </div>
-            
-            <div className="lg:col-span-1 flex flex-col">
-              <CoordinatorList coordinators={data.coordinators} />
-            </div>
-          </div>
+
+          {/* Horizontal Coordinator List */}
+          <CoordinatorList coordinators={data.coordinators.slice(0, 3)} horizontal={true} />
         </div>
 
-        <div className="flex flex-col gap-5">
-          <ApplicationChart data={data.applicationOverview} />
+        <div className="lg:col-span-1 flex flex-col gap-5">
+          {/* Pending Tasks Taking Up Right Column */}
           <PendingTasks tasks={data.tasks} />
-          <TaskDistributionChart data={data.taskDistribution} />
         </div>
       </div>
     </Layout>

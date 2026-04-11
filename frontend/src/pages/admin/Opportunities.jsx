@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import OpportunityCard from '../../components/OpportunityCard';
 import { DashboardController } from '../../controllers/dashboardController';
-import { Search, Filter, Plus, X } from 'lucide-react';
+import { Search, Filter, Plus } from 'lucide-react';
 
 const Opportunities = () => {
   const [jobs, setJobs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  const [newJob, setNewJob] = useState({
-    company: '', role: '', salary: '', deadline: '', logo: '', tags: '', description: '', type: 'Frontend'
-  });
+  const navigate = useNavigate();
 
   const fetchJobs = () => {
     DashboardController.getOpportunities().then(setJobs);
@@ -31,18 +28,6 @@ const Opportunities = () => {
     return matchesSearch && matchesRole;
   });
 
-  const handleAddJob = async (e) => {
-    e.preventDefault();
-    const formattedTags = newJob.tags ? newJob.tags.split(',').map(tag => tag.trim()) : [];
-    await DashboardController.createOpportunity({
-      ...newJob,
-      tags: formattedTags
-    });
-    setIsModalOpen(false);
-    setNewJob({ company: '', role: '', salary: '', deadline: '', logo: '', tags: '', description: '', type: 'Frontend' });
-    fetchJobs(); // refresh the list
-  };
-
   return (
     <Layout>
       <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center">
@@ -51,8 +36,8 @@ const Opportunities = () => {
           <p className="text-gray-500 font-medium text-[15px]">Find and apply to the latest internships and full-time roles.</p>
         </div>
         <button 
-          onClick={() => setIsModalOpen(true)}
-          className="mt-4 sm:mt-0 flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          onClick={() => navigate('/admin/opportunities/new')}
+          className="mt-4 sm:mt-0 flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition cursor-pointer font-medium"
         >
           <Plus className="w-5 h-5 mr-1" />
           Add Opportunity
@@ -98,48 +83,6 @@ const Opportunities = () => {
           {filteredJobs.map(job => (
             <OpportunityCard key={job._id || job.id} {...job} />
           ))}
-        </div>
-      )}
-
-      {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex flex-col items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-lg p-6 max-w-lg w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold bg-white text-gray-900">Add New Opportunity</h2>
-              <button title="close modal" aria-label="close modal" onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-700 bg-transparent border-0 cursor-pointer p-0 m-0 w-auto text-xl"><X className="w-6 h-6 border rounded" /></button>
-            </div>
-            
-            <form onSubmit={handleAddJob} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <input required placeholder="Company" className="bg-transparent text-black border p-2 rounded w-full border-gray-300" 
-                  value={newJob.company} onChange={e => setNewJob({...newJob, company: e.target.value})} />
-                <input required placeholder="Role (e.g. Developer)" className="bg-transparent text-black border p-2 rounded w-full border-gray-300" 
-                  value={newJob.role} onChange={e => setNewJob({...newJob, role: e.target.value})} />
-                <input placeholder="Salary (e.g. 15 LPA)" className="bg-transparent text-black border p-2 rounded w-full border-gray-300" 
-                  value={newJob.salary} onChange={e => setNewJob({...newJob, salary: e.target.value})} />
-                <input placeholder="Deadline" className="bg-transparent text-black border p-2 rounded w-full border-gray-300" 
-                  value={newJob.deadline} onChange={e => setNewJob({...newJob, deadline: e.target.value})} />
-              </div>
-              <input placeholder="Logo Image URL" className="bg-transparent text-black border p-2 rounded w-full border-gray-300" 
-                  value={newJob.logo} onChange={e => setNewJob({...newJob, logo: e.target.value})} />
-              <input placeholder="Tags (comma separated e.g. Remote, Eligible)" className="bg-transparent text-black border p-2 rounded w-full border-gray-300" 
-                  value={newJob.tags} onChange={e => setNewJob({...newJob, tags: e.target.value})} />
-              <textarea placeholder="Description" rows="3" className="bg-transparent text-black border p-2 rounded w-full border-gray-300" 
-                  value={newJob.description} onChange={e => setNewJob({...newJob, description: e.target.value})}></textarea>
-              
-              <select className="border p-2 rounded w-full border-gray-300 text-black bg-transparent" 
-                  value={newJob.type} onChange={e => setNewJob({...newJob, type: e.target.value})}>
-                <option value="Frontend">Frontend</option>
-                <option value="Backend">Backend</option>
-                <option value="Data Analyst">Data Analyst</option>
-              </select>
-
-              <button type="submit" className="w-full bg-blue-600 text-white font-semibold py-2 rounded shadow hover:bg-blue-700">
-                Submit Opportunity
-              </button>
-            </form>
-          </div>
         </div>
       )}
     </Layout>

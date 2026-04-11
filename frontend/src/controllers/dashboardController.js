@@ -1,5 +1,6 @@
 import { dashboardData } from '../models/data';
 import { fetchOpportunities, fetchOpportunityById, createOpportunityApi, fetchStudents, fetchApplications, fetchInterviews, createApplicationApi } from '../services/api';
+import { opportunitiesList } from '../data/dummyOpportunities';
 
 export const DashboardController = {
   getStats: () => dashboardData.stats,
@@ -26,6 +27,10 @@ export const DashboardController = {
 
   getOpportunityById: async (id) => {
     try {
+      if (id && id.toString().length < 10) {
+        const dummyJob = opportunitiesList.find(op => op.id.toString() === id.toString());
+        if (dummyJob) return dummyJob;
+      }
       const { data } = await fetchOpportunityById(id);
       return data;
     } catch (err) {

@@ -7,13 +7,10 @@ export default function ApplicationCard({
 }) {
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-800">
-          Applications
-        </h3>
-
-        <Link to="/applications" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-          View All
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-gray-900 border-l-4 border-blue-600 pl-3">Your Applications</h2>
+        <Link to="/student/applications" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+          View all
         </Link>
       </div>
 
@@ -28,8 +25,8 @@ export default function ApplicationCard({
         </div>
       </div>
 
-      <Link to="/applications" className="mt-6 block text-center w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700">
-        View Details
+      <Link to="/student/applications" className="mt-6 block text-center w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition shadow-sm hover:shadow-md">
+        Track all applications
       </Link>
     </div>
   );
