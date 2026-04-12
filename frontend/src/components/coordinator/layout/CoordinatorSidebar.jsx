@@ -33,7 +33,7 @@ export default function CoordinatorSidebar() {
       <div className="p-6 pb-0 mb-8 flex flex-col items-start">
          <div className="flex items-center gap-3 w-full mb-2">
             <div className="w-8 h-8 bg-indigo-600 rounded-md text-white flex items-center justify-center font-bold text-lg shadow-lg">P</div>
-            <h1 className="text-xl font-bold tracking-tight text-white">PlaceSync</h1>
+            <h1 className="text-xl font-bold tracking-tight text-white">ApplyWise</h1>
          </div>
          <p className="text-[11px] text-gray-400 font-bold px-1 uppercase tracking-widest mt-2 border-b border-gray-800 pb-3 w-full">Coordinator Portal</p>
       </div>

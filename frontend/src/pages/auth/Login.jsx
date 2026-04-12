@@ -66,7 +66,7 @@ export default function Login() {
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30">
               <LogIn size={30} />
             </div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight">PlaceSync</h1>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">ApplyWise</h1>
             <p className="mt-2 text-sm text-gray-500 font-medium">
               Placement Management Platform
             </p>

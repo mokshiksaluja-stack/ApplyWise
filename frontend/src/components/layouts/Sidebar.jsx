@@ -32,7 +32,7 @@ export default function Sidebar() {
     <aside className="w-64 min-h-screen bg-white border-r border-gray-200 flex flex-col">
       <div className="p-6 pb-0 mb-10">
         <h1 className="text-2xl font-bold text-blue-600">
-          PlaceSync
+          ApplyWise
         </h1>
         <p className="text-sm text-gray-500">
           Student Portal
