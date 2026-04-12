@@ -30,7 +30,10 @@ app.use(express.json());
 // Routes
 if(authRoutes) app.use('/api/auth', authRoutes);
 if(studentRoutes) app.use('/api/students', studentRoutes);
-if(jobRoutes) app.use('/api/jobs', jobRoutes);
+if(jobRoutes) {
+  app.use('/api/jobs', jobRoutes);
+  app.use('/api/opportunities', jobRoutes);
+}
 if(applicationRoutes) app.use('/api/applications', applicationRoutes);
 if(interviewRoutes) app.use('/api/interviews', interviewRoutes);
 if(coordinatorRoutes) app.use('/api/coordinator', coordinatorRoutes);

@@ -1,37 +1,53 @@
-import { createContext, useContext, useState, useCallback } from "react";
-import { opportunitiesList } from "../data/dummyOpportunities";
+import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { dashboardData } from "../models/data";
-import { assignCoordinatorApi } from "../services/api";
+import { assignCoordinatorApi, fetchOpportunities } from "../services/api";
 
 const AdminCoordinatorContext = createContext();
 
-const CURRENT_COORDINATOR_ID = 1;
-
-const initialOpportunities = opportunitiesList.map((opp, idx) => ({
-  ...opp,
-  assignedCoordinatorId: idx === 0 ? CURRENT_COORDINATOR_ID : null,
-}));
+const getLoggedInCoordinatorId = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user && user.id) return user.id;
+  } catch {}
+  return "60d5ecb8b392d700153abcd1"; // Dev fallback
+};
 
 export function AdminCoordinatorProvider({ children }) {
-  const [opportunities, setOpportunities] = useState(initialOpportunities);
+  const [opportunities, setOpportunities] = useState([]);
   const [coordinators, setCoordinators] = useState(dashboardData.coordinators);
+
+  useEffect(() => {
+    const loadRealData = async () => {
+      try {
+        const { data } = await fetchOpportunities();
+        setOpportunities(data.map(opp => ({
+          ...opp,
+          id: opp._id, // map for Admin UI compatibility
+          type: opp.opportunityType || 'Full-time' // Admin UI expects 'type'
+        })));
+      } catch (err) {
+        console.error("Failed to load opportunities for context", err);
+      }
+    };
+    loadRealData();
+  }, []);
 
   // ── assignDrive ──────────────────────────────────────────────────────────
   const assignDrive = useCallback(async (opportunityId, coordinatorId) => {
+    const coordName = coordinators.find(c => c.id === coordinatorId)?.name || "";
+
     // Optimistic local update first
     setOpportunities((prev) =>
       prev.map((opp) =>
-        opp.id === opportunityId ? { ...opp, assignedCoordinatorId: coordinatorId } : opp
+        opp.id === opportunityId ? { ...opp, assignedCoordinatorId: coordinatorId, assignedCoordinatorName: coordName } : opp
       )
     );
     try {
-      // Use MongoDB _id if available, otherwise fall through silently
-      const mongoId = opportunities.find((o) => o.id === opportunityId)?._id;
-      if (mongoId) await assignCoordinatorApi(mongoId, coordinatorId);
-    } catch {
-      // Silent — optimistic state is authoritative during dummy mode
+      if (opportunityId) await assignCoordinatorApi(opportunityId, coordinatorId, coordName);
+    } catch (err) {
+      console.error("Assignment failed", err);
     }
-  }, [opportunities]);
+  }, [coordinators]);
 
   // ── reassignDrive ────────────────────────────────────────────────────────
   const reassignDrive = useCallback((opportunityId, newCoordinatorId) => {
@@ -42,16 +58,15 @@ export function AdminCoordinatorProvider({ children }) {
   const unassignDrive = useCallback(async (opportunityId) => {
     setOpportunities((prev) =>
       prev.map((opp) =>
-        opp.id === opportunityId ? { ...opp, assignedCoordinatorId: null } : opp
+        opp.id === opportunityId ? { ...opp, assignedCoordinatorId: null, assignedCoordinatorName: null } : opp
       )
     );
     try {
-      const mongoId = opportunities.find((o) => o.id === opportunityId)?._id;
-      if (mongoId) await assignCoordinatorApi(mongoId, null);
-    } catch {
-      // Silent
+      if (opportunityId) await assignCoordinatorApi(opportunityId, null, null);
+    } catch (err) {
+       console.error("Unassignment failed", err);
     }
-  }, [opportunities]);
+  }, []);
 
   // ── logCoordinatorActivity ───────────────────────────────────────────────
   const logCoordinatorActivity = useCallback((coordinatorId, activityType) => {
@@ -68,7 +83,7 @@ export function AdminCoordinatorProvider({ children }) {
   return (
     <AdminCoordinatorContext.Provider
       value={{
-        currentCoordinatorId: CURRENT_COORDINATOR_ID,
+        currentCoordinatorId: getLoggedInCoordinatorId(),
         sharedOpportunities: opportunities,
         coordinators,
         assignDrive,

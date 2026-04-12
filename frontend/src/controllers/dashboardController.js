@@ -1,5 +1,5 @@
 import { dashboardData } from '../models/data';
-import { fetchOpportunities, fetchOpportunityById, createOpportunityApi, fetchStudents, fetchApplications, fetchInterviews, createApplicationApi } from '../services/api';
+import { fetchOpportunities, fetchOpportunityById, createOpportunityApi, fetchStudents, fetchApplications, fetchInterviews, createApplicationApi, fetchStudentApplications } from '../services/api';
 import { opportunitiesList } from '../data/dummyOpportunities';
 
 export const DashboardController = {
@@ -41,9 +41,12 @@ export const DashboardController = {
   
   applyToJob: async (id, studentId) => {
     try {
-      // In a real application, studentId would come from Auth Context. 
-      // If none provided, we try to use a placeholder or handle it upstream.
-      const appData = { studentId, jobId: id };
+      const activeStudentId = studentId || localStorage.getItem('studentId');
+      if (!activeStudentId || activeStudentId === 'null') {
+         console.warn("No active student ID to submit application");
+         return false;
+      }
+      const appData = { studentId: activeStudentId, jobId: id };
       await createApplicationApi(appData);
       return true;
     } catch (err) {
@@ -73,6 +76,17 @@ export const DashboardController = {
   getApplications: async () => {
     try {
       const { data } = await fetchApplications();
+      return Array.isArray(data) ? data : [];
+    } catch (err) {
+      console.error(err);
+      return [];
+    }
+  },
+
+  getStudentApplications: async (studentId) => {
+    if (!studentId || studentId === 'null') return [];
+    try {
+      const { data } = await fetchStudentApplications(studentId);
       return Array.isArray(data) ? data : [];
     } catch (err) {
       console.error(err);

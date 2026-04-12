@@ -27,7 +27,15 @@ export default function OpportunityCard({
     </button>
   );
 
-  if (dynamicStatus === "Partially Ready") {
+  if (dynamicStatus === "Applied") {
+    statusStyle = "bg-emerald-100 text-emerald-800 border-emerald-300";
+    StatusIcon = CheckCircle;
+    actionButton = (
+      <button disabled className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2 text-sm font-bold text-emerald-700 cursor-not-allowed">
+        <CheckCircle size={14}/> Applied
+      </button>
+    );
+  } else if (dynamicStatus === "Partially Ready") {
     statusStyle = "bg-yellow-100 text-yellow-700 border-yellow-200";
     StatusIcon = AlertTriangle;
     actionButton = (

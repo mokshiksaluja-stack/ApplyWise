@@ -55,15 +55,19 @@ export const signupAPI = (data) => API.post('/auth/signup', data);
 
 // ── Jobs / Opportunities ──────────────────────────────────────────────────
 export const fetchOpportunities    = ()       => API.get('/jobs');
+export const fetchCoordinatorOpportunities = (coordinatorId) => API.get(`/jobs/coordinator/${coordinatorId}`);
 export const fetchOpportunityById  = (id)     => API.get(`/jobs/${id}`);
-export const createOpportunityApi  = (data)   => API.post('/jobs', data);
+export const createOpportunityApi  = (data)   => API.post('/opportunities', data);
 export const updateOpportunityApi  = (id, data) => API.put(`/jobs/${id}`, data);
 export const deleteOpportunityApi  = (id)     => API.delete(`/jobs/${id}`);
-export const assignCoordinatorApi  = (id, coordinatorId) =>
-  API.put(`/jobs/${id}/assign-coordinator`, { coordinatorId });
+export const assignCoordinatorApi  = (id, coordinatorId, coordinatorName) =>
+  API.put(`/jobs/${id}/assign-coordinator`, { coordinatorId, coordinatorName });
 
 // ── Applications ──────────────────────────────────────────────────────────
-export const fetchApplications     = ()       => API.get('/applications');
+export const fetchApplications     = (filters = {}) => API.get('/applications', { params: filters });
+export const fetchStudentApplications = (studentId) => API.get(`/applications/student/${studentId}`);
+export const fetchOpportunityApplications = (jobId) => API.get(`/applications/opportunity/${jobId}`);
+export const fetchCoordinatorApplicationsApi = (coordinatorId) => API.get(`/applications/coordinator/${coordinatorId}`);
 export const fetchApplicationById  = (id)     => API.get(`/applications/${id}`);
 export const createApplicationApi  = (data)   => API.post('/applications', data);
 export const updateApplicationApi  = (id, data) => API.put(`/applications/${id}`, data);
@@ -72,6 +76,7 @@ export const updateApplicationApi  = (id, data) => API.put(`/applications/${id}`
 export const updateAppStatusApi    = (id, payload) => API.put(`/applications/${id}/status`, payload);
 export const scheduleInterviewApi  = (id, payload) => API.put(`/applications/${id}/schedule`, payload);
 export const markAttendanceApi     = (id, attendance) => API.put(`/applications/${id}/attendance`, { attendance });
+export const advanceRoundApi       = (id, payload) => API.put(`/applications/${id}/round`, payload);
 
 // ── Students ──────────────────────────────────────────────────────────────
 export const fetchStudents = () => API.get('/students');

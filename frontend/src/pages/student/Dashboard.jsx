@@ -3,29 +3,29 @@ import { Link, useNavigate } from "react-router-dom";
 import ProfileStatCard from "../../components/layouts/ProfileStatCard";
 import OpportunityCard from "../../components/dashboard/OpportunityCard";
 import NotificationCard from "../../components/dashboard/NotificationCard";
-import ApplicationCard from "../../components/dashboard/ApplicationCard";
 import ReadinessCard from "../../components/dashboard/ReadinessCard";
 
 import Skeleton from "../../components/UI/Skeleton";
 import EmptyState from "../../components/UI/EmptyState";
 import { useToast } from "../../context/ToastContext";
+import { useNotifications } from "../../context/NotificationContext";
 
 import { fetchStudentProfile } from "../../services/studentService";
+import { fetchStudentOpportunities } from "../../services/opportunityService";
 import { calculateProfileCompletion, calculateReadinessScore } from "../../utils/studentMetrics";
 import { evaluateEligibility } from "../../utils/eligibilityEngine";
 import { getDashboardRecommendedResources } from "../../utils/recommendationEngine";
-import { BookOpen, ExternalLink, FileText, Sparkles, Inbox, Briefcase } from "lucide-react";
+import { BookOpen, FileText, Sparkles, Inbox, Briefcase } from "lucide-react";
 import ResourceModal from "../../components/dashboard/ResourceModal";
-
-import { opportunitiesList as opportunities } from "../../data/dummyOpportunities";
-import { initialNotifications as notifications } from "../../data/dummyNotifications";
 
 export default function Dashboard() {
   const [profile, setProfile] = useState(null);
+  const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedResource, setSelectedResource] = useState(null);
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { notifications, loading: notifsLoading } = useNotifications();
 
   useEffect(() => {
     const getProfile = async () => {
@@ -36,11 +36,15 @@ export default function Dashboard() {
       }
 
       try {
-        const data = await fetchStudentProfile(studentId);
+        const [data, opps] = await Promise.all([
+          fetchStudentProfile(studentId),
+          fetchStudentOpportunities()
+        ]);
         setProfile(data);
+        setOpportunities(opps);
       } catch (error) {
-        console.error("Error fetching profile for dash:", error);
-        showToast("Couldn't refresh your profile data.", "error");
+        console.error("Error fetching dashboard data:", error);
+        showToast("Couldn't refresh dashboard data.", "error");
       } finally {
         setLoading(false);
       }
@@ -94,39 +98,57 @@ export default function Dashboard() {
             </div>
           )}
 
-          <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-                    <ProfileStatCard title="Profile Completion" percentage={completionPercentage} />
-                    <ReadinessCard score={readinessResult.score} />
-                    <ApplicationCard total={4} active={3} />
-          </section>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+             <ProfileStatCard 
+               label="Profile Completion" 
+               value={completionPercentage} 
+               suffix="%" 
+               trend="Critical Path"
+               color="blue"
+             />
+             <ProfileStatCard 
+               label="Placement Readiness" 
+               value={readinessResult.score} 
+               suffix="/100" 
+               trend={readinessResult.label}
+               color="indigo"
+             />
+             <ProfileStatCard 
+               label="Active Drive Applications" 
+               value={profile?.applicationsCount || 0} 
+               suffix="" 
+               trend="Season Goal"
+               color="slate"
+             />
+          </div>
 
           <section className="mt-12">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-                 <Briefcase className="text-blue-600" size={24} /> Opportunities for You
+                 <Briefcase className="text-blue-600" size={24} /> Opportunities Matching You
               </h2>
-              <Link to="/student/opportunities" className="text-xs font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition">
-                Explore all
+              <Link to="/opportunities" className="text-xs font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition">
+                Explore All
               </Link>
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-                {[1, 2, 3].map(i => <Skeleton key={i} className="h-[320px]" />)}
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3].map(i => <Skeleton key={i} className="h-[280px]" />)}
               </div>
             ) : opportunities.length > 0 ? (
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-                {opportunities.slice(0, 3).map((item) => {
-                  const evalResult = evaluateEligibility(profile, item);
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {opportunities.slice(0, 3).map((job) => {
+                  const evalResult = evaluateEligibility(profile, job);
                   return (
                     <OpportunityCard 
-                      key={item.id || item.company} 
-                      {...item} 
-                      dynamicStatus={evalResult.status}
-                      matchedCount={evalResult.skillMatchCount}
+                      key={job._id || job.id} 
+                      {...job} 
+                      eligible={evalResult.isEligible}
+                      criteria={job.eligibilityCriteria}
                       totalCount={evalResult.totalSkills}
                       missingSkills={evalResult.missingSkills}
-                      onViewDetails={() => navigate(`/student/opportunities/${item.id || '#'}`)}
+                      readinessScore={evalResult.skillMatchCount ? Math.round((evalResult.skillMatchCount / evalResult.totalSkills) * 100) : 0}
                     />
                   );
                 })}
@@ -195,11 +217,11 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-              {loading ? (
+              {notifsLoading ? (
                 [1, 2, 3].map(i => <Skeleton key={i} className="h-[100px]" />)
               ) : notifications.length > 0 ? (
                 notifications.slice(0, 3).map((item) => (
-                  <NotificationCard key={item.id || item.title} {...item} />
+                  <NotificationCard key={item._id || item.id} {...item} />
                 ))
               ) : (
                 <div className="col-span-3">

@@ -28,10 +28,16 @@ export default function StudentOpportunityDetail() {
     const fetchData = async () => {
       try {
         const studentId = localStorage.getItem("studentId");
-        const [jobData, profileData] = await Promise.all([
+        const [jobData, profileData, appsList] = await Promise.all([
           DashboardController.getOpportunityById(id),
-          studentId && studentId !== "null" ? fetchStudentProfile(studentId) : null
+          studentId && studentId !== "null" ? fetchStudentProfile(studentId) : null,
+          studentId && studentId !== "null" ? DashboardController.getStudentApplications(studentId) : []
         ]);
+
+        if (jobData) {
+           const hasApplied = appsList.some(app => app.jobId === (jobData._id || jobData.id));
+           jobData.applied = hasApplied;
+        }
 
         setJob(jobData);
         setProfile(profileData);
@@ -53,12 +59,13 @@ export default function StudentOpportunityDetail() {
   const handleApply = async () => {
     setIsApplying(true);
     try {
-      const success = await DashboardController.applyToJob(id);
+      const studentId = localStorage.getItem("studentId");
+      const success = await DashboardController.applyToJob(id, studentId);
       if (success) {
         setJob({ ...job, applied: true });
         showToast(`Successfully applied to ${job.company}! Check your email for updates.`, "success");
       } else {
-        showToast("Application failed. Please try again or contact support.", "error");
+        showToast("Application failed. You might have already applied or the deadline passed.", "error");
       }
     } catch (error) {
       showToast("Network error while submitting application.", "error");

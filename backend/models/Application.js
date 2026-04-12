@@ -11,7 +11,13 @@ const applicationSchema = new mongoose.Schema({
   attendance: { type: String, enum: ['Present', 'Absent', 'Pending'], default: 'Pending' },
   currentRound: { type: String, default: 'Initial' },
   roundResult: { type: String, default: 'Pending' },
-  date: { type: String }
+  date: { type: String },
+
+  // Interview scheduling fields
+  interviewDate: { type: String },
+  reportingTime: { type: String },
+  venue: { type: String },
+  coordinatorNotes: { type: String }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Application', applicationSchema);

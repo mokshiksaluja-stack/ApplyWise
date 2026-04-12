@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminCoordinatorContext } from '../../context/AdminCoordinatorContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useToast } from '../../context/ToastContext';
+import { fetchCoordinatorOpportunities } from '../../services/api';
 import Skeleton from '../../components/UI/Skeleton';
 import EmptyState from '../../components/UI/EmptyState';
 import clsx from 'clsx';
@@ -22,13 +23,23 @@ export default function Dashboard() {
   
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = React.useState(pendingTasks);
+  const [assignedDrives, setAssignedDrives] = useState([]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(timer);
-  }, []);
+    const loadData = async () => {
+      try {
+        const { data } = await fetchCoordinatorOpportunities(currentCoordinatorId);
+        setAssignedDrives(data);
+      } catch (err) {
+        console.error("Failed to load assigned drives", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [currentCoordinatorId]);
 
-  const assignedDrivesCount = sharedOpportunities.filter(o => o.assignedCoordinatorId === currentCoordinatorId).length;
+  const assignedDrivesCount = assignedDrives.length;
   const myTracker = coordinators.find(c => c.id === currentCoordinatorId);
 
   const dynamicStats = [

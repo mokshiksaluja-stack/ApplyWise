@@ -20,11 +20,11 @@ export const dashboardData = {
     { id: 5, title: "Draft Placement Report 2024", assignee: "Neha Gupta", dueDate: "05 Jun 2024", status: "In Progress", description: "Compile placement statistics, highest packages, and company-wise demographics for the annual report." },
   ],
   coordinators: [
-    { id: 1, name: "Rahul Sharma", rating: "4.8", tasksCompleted: "100", avatar: "https://randomuser.me/api/portraits/men/32.jpg" },
-    { id: 2, name: "Priya Singh", rating: "4.5", tasksCompleted: "103", avatar: "https://randomuser.me/api/portraits/women/44.jpg" },
-    { id: 3, name: "Amit Patel", rating: "4.3", tasksCompleted: "98", avatar: "https://randomuser.me/api/portraits/men/67.jpg" },
-    { id: 4, name: "Ravi Kumar", rating: "4.9", tasksCompleted: "150", avatar: "https://randomuser.me/api/portraits/men/22.jpg" },
-    { id: 5, name: "Neha Gupta", rating: "4.7", tasksCompleted: "112", avatar: "https://randomuser.me/api/portraits/women/68.jpg" }
+    { id: "60d5ecb8b392d700153abcd1", name: "Rahul Sharma", rating: "4.8", tasksCompleted: "100", avatar: "https://randomuser.me/api/portraits/men/32.jpg" },
+    { id: "60d5ecb8b392d700153abcd2", name: "Priya Singh", rating: "4.5", tasksCompleted: "103", avatar: "https://randomuser.me/api/portraits/women/44.jpg" },
+    { id: "60d5ecb8b392d700153abcd3", name: "Amit Patel", rating: "4.3", tasksCompleted: "98", avatar: "https://randomuser.me/api/portraits/men/67.jpg" },
+    { id: "60d5ecb8b392d700153abcd4", name: "Ravi Kumar", rating: "4.9", tasksCompleted: "150", avatar: "https://randomuser.me/api/portraits/men/22.jpg" },
+    { id: "60d5ecb8b392d700153abcd5", name: "Neha Gupta", rating: "4.7", tasksCompleted: "112", avatar: "https://randomuser.me/api/portraits/women/68.jpg" }
   ],
   students: [
     { id: 1, name: "Arun Verma", email: "arun.v@college.edu", course: "B.Tech Computer Science", year: "4th Year", status: "Placed" },

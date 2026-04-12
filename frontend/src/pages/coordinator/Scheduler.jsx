@@ -1,78 +1,106 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, MapPin, Clock, Users, Plus, MoreVertical, Edit2, XCircle, UserPlus, FileText, CheckCircle, GripVertical, AlertCircle } from 'lucide-react';
-import { usePlacementContext } from '../../context/PlacementContext';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Calendar as CalendarIcon, MapPin, Clock, Users, Plus, MoreVertical, Edit2, XCircle, UserPlus, FileText, CheckCircle, GripVertical, AlertCircle, Loader2 } from 'lucide-react';
+import { useAdminCoordinatorContext } from '../../context/AdminCoordinatorContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useToast } from '../../context/ToastContext';
+import { fetchCoordinatorApplicationsApi, scheduleInterviewApi } from '../../services/api';
 import Skeleton from '../../components/UI/Skeleton';
+import EmptyState from '../../components/UI/EmptyState';
 import clsx from 'clsx';
 
-// --- Dummy Data Models ---
-
-const mockSlots = [
-  {
-    id: 'slot1',
-    time: '09:30 AM',
-    period: 'Morning',
-    venue: 'Conference Room A',
-    status: 'Scheduled',
-    students: [
-      { id: 's1', name: 'Sneha Patel', rollNo: '20IT112' },
-      { id: 's2', name: 'Arjun Singh', rollNo: '20ME005' }
-    ]
-  },
-  {
-    id: 'slot2',
-    time: '11:00 AM',
-    period: 'Morning',
-    venue: 'Conference Room B',
-    status: 'Completed',
-    students: [
-      { id: 's3', name: 'Meera Reddy', rollNo: '20CS088' }
-    ]
-  },
-  {
-    id: 'slot3',
-    time: '02:00 PM',
-    period: 'Afternoon',
-    venue: 'Lab 3',
-    status: 'Pending',
-    students: []
-  },
-  {
-    id: 'slot4',
-    time: '03:30 PM',
-    period: 'Afternoon',
-    venue: 'Lab 3',
-    status: 'Cancelled',
-    students: []
+// ── Helpers ──────────────────────────────────────────────────────────────────
+const resolveStudentName = (app) => {
+  if (app.studentId && typeof app.studentId === 'object') {
+    return app.studentId.fullName || app.studentId.name || 'Unknown';
   }
-];
+  return app.studentName || 'Unknown';
+};
+
+const resolveRollNo = (app) => {
+  if (app.studentId && typeof app.studentId === 'object') return app.studentId.enrollmentNumber || '—';
+  return '—';
+};
+
+const resolveBranch = (app) => {
+  if (app.studentId && typeof app.studentId === 'object') return app.studentId.branch || '—';
+  return '—';
+};
+
+const resolveCompany = (app) => {
+  if (app.jobId && typeof app.jobId === 'object') return app.jobId.company || app.company;
+  return app.company || '—';
+};
 
 export default function Scheduler() {
-  const { globalApplications, scheduleInterview } = usePlacementContext();
+  const { currentCoordinatorId } = useAdminCoordinatorContext();
   const { addNotification } = useNotifications();
   const { showToast } = useToast();
+
+  const [allApplications, setAllApplications] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Load unassigned students directly from shared context (matching Google drives missing a date)
-  const [unassignedList, setUnassignedList] = useState([]);
-  const [slotsList, setSlotsList] = useState(mockSlots);
   const [activeSlotMenu, setActiveSlotMenu] = useState(null);
+  const [scheduleDate, setScheduleDate] = useState(() => {
+    const d = new Date();
+    return d.toISOString().split('T')[0];
+  });
 
+  // Slot management — local UI state for the drag-drop board
+  const [slots, setSlots] = useState([
+    { id: 'slot1', time: '09:30 AM', period: 'Morning', venue: 'Conference Room A', status: 'Pending', students: [] },
+    { id: 'slot2', time: '11:00 AM', period: 'Morning', venue: 'Conference Room B', status: 'Pending', students: [] },
+    { id: 'slot3', time: '02:00 PM', period: 'Afternoon', venue: 'Lab 3', status: 'Pending', students: [] },
+    { id: 'slot4', time: '03:30 PM', period: 'Afternoon', venue: 'Lab 3', status: 'Pending', students: [] },
+  ]);
+
+  // ── Fetch Real Applications ────────────────────────────────────────────
   useEffect(() => {
-    // Initial sync and artificial delay for skeleton
-    const timer = setTimeout(() => {
-      setUnassignedList(
-        globalApplications
-          .filter(app => app.interviewDate === "TBD" || !app.interviewDate)
-          .map(app => ({ id: app.id, name: app.studentName, rollNo: app.rollNo, branch: app.branch, company: app.company }))
-      );
-      setLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [globalApplications]);
+    const load = async () => {
+      try {
+        const { data } = await fetchCoordinatorApplicationsApi(currentCoordinatorId);
+        setAllApplications(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Failed to load coordinator applications for scheduler', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (currentCoordinatorId) load();
+  }, [currentCoordinatorId]);
 
-  // Status Styles Component
+  // Derive: unscheduled = no interviewDate yet, or status not "Interview Scheduled"
+  const unassignedList = useMemo(() => {
+    return allApplications.filter(
+      app => !app.interviewDate || app.status !== 'Interview Scheduled'
+    );
+  }, [allApplications]);
+
+  // Derive: already scheduled (reconstruct into slots based on their data)
+  useEffect(() => {
+    const scheduled = allApplications.filter(a => a.interviewDate && a.status === 'Interview Scheduled');
+    if (scheduled.length > 0) {
+      // Populate slots that match
+      setSlots(prev => prev.map(slot => {
+        const matching = scheduled.filter(a => a.reportingTime === slot.time && a.venue === slot.venue);
+        if (matching.length > 0) {
+          return {
+            ...slot,
+            status: 'Scheduled',
+            students: matching.map(a => ({
+              id: a._id,
+              name: resolveStudentName(a),
+              rollNo: resolveRollNo(a),
+              branch: resolveBranch(a),
+              company: resolveCompany(a),
+              appId: a._id
+            }))
+          };
+        }
+        return slot;
+      }));
+    }
+  }, [allApplications]);
+
+  // ── Status Badge ───────────────────────────────────────────────────────
   const StatusBadge = ({ status }) => {
     switch (status) {
       case 'Scheduled': return <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm"><Clock className="w-3 h-3" /> Scheduled</span>;
@@ -83,65 +111,100 @@ export default function Scheduler() {
     }
   };
 
-  const morningSlots = slotsList.filter(s => s.period === 'Morning');
-  const afternoonSlots = slotsList.filter(s => s.period === 'Afternoon');
+  const morningSlots = slots.filter(s => s.period === 'Morning');
+  const afternoonSlots = slots.filter(s => s.period === 'Afternoon');
 
-  const handleDragStart = (e, studentId) => {
-    e.dataTransfer.setData('studentId', studentId);
+  // ── Drag & Drop ────────────────────────────────────────────────────────
+  const handleDragStart = (e, appId) => {
+    e.dataTransfer.setData('appId', appId);
   };
 
-  const handleDrop = (e, slotId) => {
+  const handleDrop = async (e, slotId) => {
     e.preventDefault();
-    const studentId = e.dataTransfer.getData('studentId');
-    if(!studentId) return;
+    const appId = e.dataTransfer.getData('appId');
+    if (!appId) return;
 
-    const student = unassignedList.find(s => s.id === studentId);
-    if(student) {
-      const targetSlot = slotsList.find(s => s.id === slotId);
+    const application = unassignedList.find(a => (a._id || a.id) === appId);
+    if (!application) return;
 
-      // Remove from unassigned UI state
-      setUnassignedList(prev => prev.filter(s => s.id !== studentId));
-      
-      // Add to slot UI state
-      setSlotsList(prev => prev.map(slot => {
-        if(slot.id === slotId) {
-          return { ...slot, students: [...slot.students, student], status: 'Scheduled' }; 
+    const targetSlot = slots.find(s => s.id === slotId);
+    if (!targetSlot) return;
+
+    const studentName = resolveStudentName(application);
+    const company = resolveCompany(application);
+
+    // Call backend — schedule interview
+    try {
+      await scheduleInterviewApi(appId, {
+        interviewDate: scheduleDate,
+        reportingTime: targetSlot.time,
+        venue: targetSlot.venue
+      });
+
+      // Update local app list — mark as scheduled
+      setAllApplications(prev => prev.map(a =>
+        (a._id || a.id) === appId
+          ? { ...a, status: 'Interview Scheduled', interviewDate: scheduleDate, reportingTime: targetSlot.time, venue: targetSlot.venue }
+          : a
+      ));
+
+      // Update local slot UI
+      setSlots(prev => prev.map(slot => {
+        if (slot.id === slotId) {
+          return {
+            ...slot,
+            status: 'Scheduled',
+            students: [...slot.students, {
+              id: appId,
+              name: studentName,
+              rollNo: resolveRollNo(application),
+              branch: resolveBranch(application),
+              company,
+              appId
+            }]
+          };
         }
         return slot;
       }));
 
-      // INTEGRATION PUSH
-      scheduleInterview(student.id, "2026-10-25", targetSlot.time, targetSlot.venue);
-      showToast(`Assigned ${student.name} to ${targetSlot.time} slot`, "success");
-      
+      showToast(`Scheduled ${studentName} at ${targetSlot.time} — ${targetSlot.venue}`, "success");
+
       addNotification({
         title: 'Interview Scheduled',
-        message: `Your interview for ${student.company || 'Google'} is confirmed at ${targetSlot.time} in ${targetSlot.venue}. Good luck!`,
+        message: `Your interview for ${company} is confirmed on ${scheduleDate} at ${targetSlot.time} in ${targetSlot.venue}. Good luck!`,
         type: 'interview'
       });
+    } catch (err) {
+      showToast(`Failed to schedule interview. ${err?.response?.data?.message || 'Try again.'}`, "error");
     }
   };
 
   const allowDrop = (e) => e.preventDefault();
 
   const removeStudentFromSlot = (slotId, studentId) => {
-    // Find student
-    const slot = slotsList.find(s => s.id === slotId);
-    const student = slot.students.find(s => s.id === studentId);
-    
-    // Remove from slot
-    setSlotsList(prev => prev.map(s => {
-      if(s.id === slotId) {
-        return { ...s, students: s.students.filter(st => st.id !== studentId) };
+    const slot = slots.find(s => s.id === slotId);
+    const student = slot?.students.find(s => s.id === studentId);
+    if (!student) return;
+
+    setSlots(prev => prev.map(s => {
+      if (s.id === slotId) {
+        const remaining = s.students.filter(st => st.id !== studentId);
+        return { ...s, students: remaining, status: remaining.length > 0 ? 'Scheduled' : 'Pending' };
       }
       return s;
     }));
-    
-    // Add back to unassigned
-    setUnassignedList(prev => [...prev, student]);
+
+    // Mark back as un-scheduled locally
+    setAllApplications(prev => prev.map(a =>
+      (a._id || a.id) === studentId
+        ? { ...a, status: 'Applied', interviewDate: null, reportingTime: null, venue: null }
+        : a
+    ));
+
     showToast(`Removed ${student.name} from slot`, "info");
   };
 
+  // ── Loading State ──────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="h-[calc(100vh-8rem)] flex flex-col gap-6 animate-in fade-in duration-500 overflow-hidden">
@@ -154,9 +217,10 @@ export default function Scheduler() {
     );
   }
 
+  // ── Slot Card ──────────────────────────────────────────────────────────
   const SlotCard = ({ slot }) => (
-    <div 
-      onDrop={(e) => handleDrop(e, slot.id)} 
+    <div
+      onDrop={(e) => handleDrop(e, slot.id)}
       onDragOver={allowDrop}
       className={clsx(
         "bg-white rounded-[24px] border p-6 relative overflow-visible group transition-all premium-card",
@@ -170,70 +234,70 @@ export default function Scheduler() {
             <StatusBadge status={slot.status} />
           </div>
           <div className="flex items-center gap-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-             <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> {slot.venue}</span>
-             <span className="flex items-center gap-1.5 text-blue-500 opacity-60"><Users className="w-3.5 h-3.5" /> {slot.students.length} Assigned</span>
+            <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> {slot.venue}</span>
+            <span className="flex items-center gap-1.5 text-blue-500 opacity-60"><Users className="w-3.5 h-3.5" /> {slot.students.length} Assigned</span>
           </div>
         </div>
-        
+
         <div className="relative">
-          <button 
+          <button
             onClick={() => setActiveSlotMenu(activeSlotMenu === slot.id ? null : slot.id)}
             className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all border border-transparent shadow-sm"
           >
             <MoreVertical className="w-5 h-5" />
           </button>
           {activeSlotMenu === slot.id && (
-             <div className="absolute right-0 top-12 w-52 bg-white border border-gray-100 shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-[20px] z-[60] py-1.5 overflow-hidden animate-in fade-in zoom-in-95 origin-top-right p-1">
-               <button className="w-full text-left px-4 py-3 text-xs text-gray-700 hover:bg-gray-50 font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-3">
-                 <Edit2 className="w-4 h-4 text-gray-400" /> Edit Slot
-               </button>
-               <button className="w-full text-left px-4 py-3 text-xs text-gray-700 hover:bg-gray-50 font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-3 border-b border-gray-50">
-                 <UserPlus className="w-4 h-4 text-gray-400" /> Auto-Fill
-               </button>
-               <button className="w-full text-left px-4 py-3 text-xs text-rose-600 hover:bg-rose-50 font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-3">
-                 <XCircle className="w-4 h-4" /> Terminate Slot
-               </button>
-             </div>
+            <div className="absolute right-0 top-12 w-52 bg-white border border-gray-100 shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-[20px] z-[60] py-1.5 overflow-hidden animate-in fade-in zoom-in-95 origin-top-right p-1">
+              <button className="w-full text-left px-4 py-3 text-xs text-gray-700 hover:bg-gray-50 font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-3">
+                <Edit2 className="w-4 h-4 text-gray-400" /> Edit Slot
+              </button>
+              <button className="w-full text-left px-4 py-3 text-xs text-gray-700 hover:bg-gray-50 font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-3 border-b border-gray-50">
+                <UserPlus className="w-4 h-4 text-gray-400" /> Auto-Fill
+              </button>
+              <button className="w-full text-left px-4 py-3 text-xs text-rose-600 hover:bg-rose-50 font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-3">
+                <XCircle className="w-4 h-4" /> Terminate Slot
+              </button>
+            </div>
           )}
         </div>
       </div>
 
       <div className="min-h-[80px] bg-gray-50/50 rounded-2xl border border-gray-100 border-dashed flex flex-col p-3 gap-2.5 shadow-inner">
-         {slot.students.length === 0 ? (
-           <div className="flex-1 flex flex-col items-center justify-center text-[10px] font-black text-gray-300 uppercase tracking-widest py-4">
-             <div className="w-8 h-8 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center mb-2">
-                <Plus size={14} />
-             </div>
-             Ready for Assignment
-           </div>
-         ) : (
-           slot.students.map(student => (
-             <div key={student.id} className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm text-sm group/student hover:border-blue-200 hover:shadow-lg hover:shadow-blue-600/5 transition-all">
-               <div className="flex items-center gap-3">
-                 <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-black text-[10px] shadow-sm">
-                   {student.name.charAt(0)}
-                 </div>
-                 <div>
-                   <span className="font-black text-gray-900 block leading-none">{student.name}</span>
-                   <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight mt-1.5 inline-block">{student.rollNo}</span>
-                 </div>
-               </div>
-               <button 
-                 onClick={() => removeStudentFromSlot(slot.id, student.id)}
-                 className="w-7 h-7 flex items-center justify-center text-gray-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover/student:opacity-100"
-               >
-                 <XCircle className="w-4 h-4" />
-               </button>
-             </div>
-           ))
-         )}
+        {slot.students.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-[10px] font-black text-gray-300 uppercase tracking-widest py-4">
+            <div className="w-8 h-8 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center mb-2">
+              <Plus size={14} />
+            </div>
+            Ready for Assignment
+          </div>
+        ) : (
+          slot.students.map(student => (
+            <div key={student.id} className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm text-sm group/student hover:border-blue-200 hover:shadow-lg hover:shadow-blue-600/5 transition-all">
+              <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-black text-[10px] shadow-sm">
+                  {student.name.charAt(0)}
+                </div>
+                <div>
+                  <span className="font-black text-gray-900 block leading-none">{student.name}</span>
+                  <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight mt-1.5 inline-block">{student.rollNo} • {student.company}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => removeStudentFromSlot(slot.id, student.id)}
+                className="w-7 h-7 flex items-center justify-center text-gray-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover/student:opacity-100"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col animate-in fade-in duration-700 overflow-hidden">
-      
+
       {/* Top Config Header */}
       <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm p-6 mb-8 flex-shrink-0 flex flex-col md:flex-row justify-between md:items-center gap-6 relative z-20 premium-card">
         <div>
@@ -241,16 +305,17 @@ export default function Scheduler() {
             <CalendarIcon className="w-6 h-6 text-blue-600" /> Operational Scheduler
           </h1>
           <div className="flex items-center gap-3 mt-1.5">
-             <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest opacity-60">Google</p>
-             <span className="w-1 h-1 rounded-full bg-gray-200"></span>
-             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">SDE Round 1</p>
+            <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest opacity-60">Real-Time Scheduling</p>
+            <span className="w-1 h-1 rounded-full bg-gray-200"></span>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{unassignedList.length} pending · {allApplications.length - unassignedList.length} scheduled</p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4 w-full md:w-auto">
-          <input 
-            type="date" 
-            defaultValue="2026-10-25" 
+          <input
+            type="date"
+            value={scheduleDate}
+            onChange={(e) => setScheduleDate(e.target.value)}
             className="px-5 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-xl text-xs font-black uppercase tracking-widest text-gray-700 focus:outline-none shadow-inner transition-all"
           />
           <button className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 border-2 border-gray-900 hover:bg-blue-600 hover:border-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-gray-900/10 transition-all flex-1 md:flex-none active:scale-95">
@@ -261,14 +326,14 @@ export default function Scheduler() {
 
       {/* Main Drag-Drop Workspace */}
       <div className="flex flex-col lg:flex-row gap-8 flex-1 min-h-0 relative z-10 p-1">
-        
-        {/* Left Side: Slots Grid (Scrollable) */}
+
+        {/* Left Side: Slots Grid */}
         <div className="flex-1 flex flex-col bg-white rounded-[40px] border border-gray-100 shadow-sm overflow-hidden min-h-0 premium-card">
           <div className="p-6 border-b border-gray-50 bg-gray-50/30 flex justify-between items-center">
             <h2 className="text-xl font-black text-gray-900 tracking-tight">Active Matrix</h2>
-            <div className="text-[10px] font-black text-gray-400 bg-white px-4 py-1.5 rounded-full border border-gray-100 uppercase tracking-widest shadow-sm">{slotsList.length} Capacity Segments</div>
+            <div className="text-[10px] font-black text-gray-400 bg-white px-4 py-1.5 rounded-full border border-gray-100 uppercase tracking-widest shadow-sm">{slots.length} Capacity Segments</div>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto p-8 space-y-12 scrollbar-hide">
             {/* Morning Session */}
             <div>
@@ -299,39 +364,46 @@ export default function Scheduler() {
               <h2 className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-3"><Users className="w-5 h-5 text-blue-600" /> Pending Registry</h2>
               <span className="bg-blue-600 text-white text-[10px] font-black px-3 py-1 rounded-lg shadow-lg shadow-blue-600/20">{unassignedList.length}</span>
             </div>
-            <p className="text-[11px] text-gray-400 font-bold uppercase tracking-tight">Move entities to allocate timing</p>
+            <p className="text-[11px] text-gray-400 font-bold uppercase tracking-tight">Drag applicants to a time slot to schedule</p>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30 space-y-3 scrollbar-hide">
-             {unassignedList.length === 0 ? (
-               <div className="text-center py-20 flex flex-col items-center justify-center grayscale opacity-40">
-                 <CheckCircle className="w-16 h-16 text-emerald-500 mb-6 animate-pulse" />
-                 <p className="font-black text-gray-900 text-sm uppercase tracking-widest">Registry Complete</p>
-                 <p className="text-[10px] text-gray-400 font-bold mt-2 uppercase tracking-tight">All entities allocated successfully</p>
-               </div>
-             ) : (
-                unassignedList.map(student => (
-                  <div 
-                    key={student.id}
+            {unassignedList.length === 0 ? (
+              <div className="text-center py-20 flex flex-col items-center justify-center grayscale opacity-40">
+                <CheckCircle className="w-16 h-16 text-emerald-500 mb-6 animate-pulse" />
+                <p className="font-black text-gray-900 text-sm uppercase tracking-widest">Registry Complete</p>
+                <p className="text-[10px] text-gray-400 font-bold mt-2 uppercase tracking-tight">All applicants have been scheduled</p>
+              </div>
+            ) : (
+              unassignedList.map(app => {
+                const appId = app._id || app.id;
+                return (
+                  <div
+                    key={appId}
                     draggable
-                    onDragStart={(e) => handleDragStart(e, student.id)}
+                    onDragStart={(e) => handleDragStart(e, appId)}
                     className="p-4 bg-white border border-gray-100 shadow-sm rounded-[20px] cursor-grab active:cursor-grabbing hover:border-blue-400 hover:shadow-xl hover:shadow-blue-600/5 transition-all flex items-center gap-4 group active:scale-95"
                   >
                     <div className="w-10 h-10 rounded-xl bg-gray-50 text-gray-400 flex items-center justify-center font-black text-xs uppercase shadow-inner group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
                       <GripVertical size={16} />
                     </div>
-                    <div>
-                      <h4 className="text-sm font-black text-gray-900 leading-tight">{student.name}</h4>
-                      <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tight">{student.rollNo} • {student.branch}</p>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-black text-gray-900 leading-tight">{resolveStudentName(app)}</h4>
+                      <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tight">
+                        {resolveRollNo(app)} • {resolveCompany(app)}
+                      </p>
                     </div>
+                    <div className="text-[9px] font-black text-gray-300 uppercase">{app.currentRound}</div>
                   </div>
-                ))
-             )}
+                );
+              })
+            )}
           </div>
           <div className="p-6 border-t border-gray-50 bg-white">
-            <button className="w-full py-3.5 bg-white hover:bg-gray-900 hover:text-white text-gray-900 border border-gray-100 rounded-[20px] text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-sm hover:shadow-lg active:scale-95">
-              <FileText className="w-4 h-4 opacity-50" /> Sync to Cloud
-            </button>
+            <div className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest justify-center">
+              <AlertCircle size={14} className="text-blue-500" />
+              {allApplications.length} total applicant{allApplications.length !== 1 ? 's' : ''} in scope
+            </div>
           </div>
         </div>
 

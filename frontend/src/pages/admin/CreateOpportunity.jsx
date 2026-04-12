@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { DashboardController } from '../../controllers/dashboardController';
 import { ArrowLeft, Save, Briefcase, IndianRupee, GraduationCap, Code2, FileText, CheckCircle, FolderOpen, Lightbulb, Users, Settings, Plus, X } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
 
 const CreateOpportunity = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -67,9 +69,103 @@ const CreateOpportunity = () => {
     newRounds.splice(index, 1);
     setFormData(prev => ({ ...prev, selectionRounds: newRounds }));
   };
+  const fillDummyData = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const deadlineStr = tomorrow.toISOString().split('T')[0];
+
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 2);
+    const joiningDateStr = nextMonth.toISOString().split('T')[0];
+
+    setFormData({
+      company: 'Google', 
+      logo: 'https://cdn-icons-png.flaticon.com/512/2991/2991148.png', 
+      title: 'Graduate Software Engineer', 
+      role: 'SDE-1', 
+      opportunityType: 'Full-time', 
+      employmentMode: 'On-site', 
+      location: 'Bengaluru / Hyderabad', 
+      department: 'Cloud Platform', 
+      eligibleBatch: '2024, 2025', 
+      deadline: deadlineStr, 
+      tentativeJoiningDate: joiningDateStr, 
+      internshipDuration: '6 Months',
+      
+      stipend: '1,20,000', 
+      salary: '32,00,000', 
+      basePay: '18,50,000', 
+      variablePay: '5,00,000', 
+      ppoAvailable: true, 
+      ppoCriteria: 'Performance based on internship completion', 
+      bondRequired: false, 
+      bondDuration: '', 
+      benefits: 'Health Insurance, Free Meals, ESPP, Relocation Bonus',
+
+      eligibleDegrees: 'B.Tech, M.Tech, MCA', 
+      eligibleBranches: 'CS, IT, ECE, EEE', 
+      minCGPA: '7.5', 
+      maxBacklogs: '0', 
+      tenthPercent: '75', 
+      twelfthPercent: '75', 
+      semesterEligibility: '7, 8', 
+      gapYearRestrictions: 'Max 1 year allowed', 
+      previousOfferRestrictions: 'None', 
+      previousApplicationRestrictions: '6 months cool-off',
+
+      requiredSkills: 'Data Structures, Algorithms, Problem Solving, Java/C++', 
+      preferredSkills: 'Cloud Computing, Distributed Systems, React.js', 
+      programmingLanguages: 'C++, Java, Python, JavaScript', 
+      toolsPlatforms: 'Google Cloud, Git, VS Code, Docker', 
+      domainFocus: 'Systems Engineering', 
+      assessmentAreas: 'Coding, System Design, Behavioral',
+
+      shortSummary: 'Join Google as a Graduate Software Engineer to solve complex technical problems and impact millions of users.', 
+      description: 'As a Software Engineer at Google, you will work on the next generation of technologies that will change how billions of users connect, explore, and do business.', 
+      responsibilities: 'Design, develop, test, deploy, maintain and improve software. Manage individual project priorities, deadlines and deliverables.', 
+      teamContext: 'You will be part of the Google Cloud Infrastructure team.',
+
+      selectionRounds: [
+        { name: 'Online Assessment', description: '2 Coding questions on DSA', assessmentType: 'Coding' },
+        { name: 'Technical Round 1', description: 'Data Structures & Algorithms interview', assessmentType: 'Interview' },
+        { name: 'Technical Round 2', description: 'System Design & Problem Solving', assessmentType: 'Interview' },
+        { name: 'HR Round', description: 'Googleyness & Leadership', assessmentType: 'Interview' }
+      ],
+      processTimeline: '2-3 Weeks after deadline',
+
+      requiredDocuments: 'CV, Transcripts, Graduation Certificates', 
+      customQuestions: 'Why Google?, Tell us about a challenging project you worked on.',
+
+      importantTopics: 'Graphs, Dynamic Programming, Os, Networking', 
+      dsaFocus: 'Recursion, Trees, Hashing', 
+      coreSubjectsFocus: 'Operating Systems, Database Management', 
+      aptitudeFocus: 'Logical Reasoning, Quantitative Analysis', 
+      topTips: 'Focus on clean code and algorithmic complexity. Practice LeetCode medium/hard questions.', 
+      experienceLinks: 'https://leetcode.com/discuss/interview-experience?company=Google',
+
+      coordinatorAssigned: '', 
+      hrMobileNumber: '+91 9876543210', 
+      venue: 'Google Bengaluru North Office', 
+      reportingInstructions: 'Please carry your physical ID proof and a copy of your CV.', 
+      contactPerson: 'Aditi Sharma (Campus Recruiting Manager)',
+
+      isDraft: false, 
+      isFeatured: true, 
+      visibilityRule: 'All', 
+      autoLockForIneligible: true, 
+      status: 'Open'
+    });
+
+    showToast("Form filled with demo data!", "info");
+  };
 
   const processArrayFields = (data) => {
-    const arrayFields = ['eligibleBatch', 'eligibleDegrees', 'eligibleBranches', 'semesterEligibility', 'requiredSkills', 'preferredSkills', 'programmingLanguages', 'toolsPlatforms', 'assessmentAreas'];
+    const arrayFields = [
+      'eligibleBatch', 'eligibleDegrees', 'eligibleBranches', 'semesterEligibility', 
+      'requiredSkills', 'preferredSkills', 'programmingLanguages', 'toolsPlatforms', 
+      'assessmentAreas', 'requiredDocuments', 'customQuestions', 'importantTopics', 
+      'dsaFocus', 'coreSubjectsFocus', 'aptitudeFocus', 'topTips', 'experienceLinks'
+    ];
     
     const processed = { ...data };
     arrayFields.forEach(field => {
@@ -79,6 +175,18 @@ const CreateOpportunity = () => {
         processed[field] = [];
       }
     });
+
+    // Remove string field that backend doesn't expect in this format to prevent casting errors
+    if (!processed.coordinatorAssigned || typeof processed.coordinatorAssigned === 'string') {
+        delete processed.coordinatorAssigned;
+    }
+    
+    // Remove empty strings for number and date fields
+    const optionalFields = ['minCGPA', 'maxBacklogs', 'tenthPercent', 'twelfthPercent', 'deadline', 'tentativeJoiningDate'];
+    optionalFields.forEach(f => {
+      if (processed[f] === '') delete processed[f];
+    });
+
     return processed;
   };
 
@@ -87,11 +195,17 @@ const CreateOpportunity = () => {
     setIsSubmitting(true);
     try {
       const payload = processArrayFields(formData);
-      await DashboardController.createOpportunity(payload);
-      navigate('/admin/opportunities');
+      const result = await DashboardController.createOpportunity(payload);
+      
+      if (result) {
+        showToast("Opportunity created successfully!", "success");
+        navigate('/admin/opportunities');
+      } else {
+        showToast("Failed to create opportunity. Please check your network.", "error");
+      }
     } catch (error) {
       console.error("Failed to create", error);
-      alert("Failed to create opportunity. Please try again.");
+      showToast("An error occurred. Please try again.", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -150,15 +264,38 @@ const CreateOpportunity = () => {
   return (
     <Layout>
       <div className="max-w-5xl mx-auto pb-12">
-        <div className="flex items-center gap-4 mb-8">
-          <button onClick={() => navigate('/admin/opportunities')} className="p-2 bg-white hover:bg-gray-50 rounded-xl shadow-sm border border-gray-200 transition-colors text-gray-600">
-            <ArrowLeft className="w-5 h-5" />
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate(-1)} className="p-2.5 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-gray-900 hover:border-gray-300 transition-all active:scale-95 shadow-sm">
+            <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Create Opportunity</h1>
-            <p className="text-sm text-gray-500 mt-1">Fill in the details to publish a new job or internship.</p>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Create Opportunity</h1>
+            <p className="text-sm font-medium text-gray-500 mt-1">Design a new recruitment drive with full parameters.</p>
           </div>
         </div>
+
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <button 
+            type="button" 
+            onClick={fillDummyData}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-100 transition-all active:scale-95"
+          >
+            <Lightbulb size={16} /> Auto-fill Demo
+          </button>
+          <button 
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-gray-900/10 hover:bg-blue-600 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {isSubmitting ? 'Processing...' : (
+              <>
+                <Save size={16} /> Save Opportunity
+              </>
+            )}
+          </button>
+        </div>
+      </div>
 
         <form onSubmit={handleSubmit}>
           

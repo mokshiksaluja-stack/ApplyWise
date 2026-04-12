@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 import OpportunityCard from "../../components/dashboard/OpportunityCard";
 import { fetchStudentProfile } from "../../services/studentService";
-import { evaluateEligibility } from "../../utils/eligibilityEngine";
+import { fetchStudentOpportunities } from "../../services/opportunityService";
 import { DashboardController } from "../../controllers/dashboardController";
+import { evaluateEligibility } from "../../utils/eligibilityEngine";
 import { Search, Briefcase, Filter, XCircle } from "lucide-react";
 import Skeleton from "../../components/UI/Skeleton";
 import EmptyState from "../../components/UI/EmptyState";
@@ -11,6 +12,7 @@ import { useToast } from "../../context/ToastContext";
 export default function Opportunities() {
   const [profile, setProfile] = useState(null);
   const [opportunitiesList, setOpportunitiesList] = useState([]);
+  const [appliedJobIds, setAppliedJobIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
@@ -22,12 +24,14 @@ export default function Opportunities() {
     const fetchData = async () => {
       const studentId = localStorage.getItem("studentId");
       try {
-        const [opps, profileData] = await Promise.all([
-          DashboardController.getOpportunities(),
-          studentId && studentId !== "null" ? fetchStudentProfile(studentId) : null
+        const [opps, profileData, appsList] = await Promise.all([
+          fetchStudentOpportunities(),
+          studentId && studentId !== "null" ? fetchStudentProfile(studentId) : null,
+          studentId && studentId !== "null" ? DashboardController.getStudentApplications(studentId) : []
         ]);
         setOpportunitiesList(opps);
         setProfile(profileData);
+        setAppliedJobIds(new Set(appsList.map(a => a.jobId)));
       } catch (error) {
         console.error("Error fetching data:", error);
         showToast("Failed to sync opportunities. Please refresh.", "error");
@@ -41,9 +45,11 @@ export default function Opportunities() {
   const augmentedOpportunities = useMemo(() => {
     return opportunitiesList.map((opp) => {
       const evalResult = evaluateEligibility(profile, opp);
+      const isApplied = appliedJobIds.has(opp._id || opp.id);
       return {
         ...opp,
-        dynamicStatus: evalResult.status,
+        applied: isApplied,
+        dynamicStatus: isApplied ? "Applied" : evalResult.status,
         matchedSkills: evalResult.matchedSkills,
         missingSkills: evalResult.missingSkills,
         matchedCount: evalResult.skillMatchCount,
@@ -51,7 +57,7 @@ export default function Opportunities() {
         eligibilityReason: evalResult.reasons.join(" ")
       };
     });
-  }, [profile, opportunitiesList]);
+  }, [profile, opportunitiesList, appliedJobIds]);
 
   const filteredOpportunities = useMemo(() => {
     return augmentedOpportunities.filter((item) => {
@@ -117,17 +123,22 @@ export default function Opportunities() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredOpportunities.map((opp) => (
             <div key={opp.id} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <OpportunityCard
+              <OpportunityCard 
+                id={opp._id || opp.id}
                 company={opp.company}
+                logo={opp.logo}
                 role={opp.role}
-                stipend={opp.stipend}
+                jobType={opp.opportunityType || "Full-time"}
+                location={opp.location}
+                stipend={opp.stipend || opp.salary}
+                deadline={opp.deadline ? new Date(opp.deadline).toISOString().split('T')[0] : null}
+                tags={[...(opp.isFeatured ? ['Featured'] : []), ...(opp.ppoAvailable ? ['PPO'] : []), ...(opp.employmentMode === 'Remote' ? ['Remote'] : [])]}
                 dynamicStatus={opp.dynamicStatus}
                 requiredSkills={opp.requiredSkills}
                 matchedCount={opp.matchedCount}
                 totalCount={opp.totalCount}
                 missingSkills={opp.missingSkills}
                 readinessScore={opp.readinessScore || opp.matchedCount ? Math.round((opp.matchedCount / opp.totalCount) * 100) : 0}
-                id={opp._id || opp.id}
               />
             </div>
           ))}

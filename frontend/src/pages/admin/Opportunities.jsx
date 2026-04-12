@@ -84,7 +84,7 @@ const Opportunities = () => {
                      onChange={(e) => {
                         const val = e.target.value;
                         if(val === '') unassignDrive(job.id);
-                        else assignDrive(job.id, parseInt(val));
+                        else assignDrive(job.id, val);
                      }}
                    >
                      <option value="">Unassigned</option>

@@ -1,17 +1,37 @@
-import { createContext, useContext, useState, useCallback } from "react";
-import { createNotificationApi, markNotifReadApi } from "../services/api";
-import { initialNotifications } from "../data/dummyNotifications";
+import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { fetchNotificationsApi, createNotificationApi, markNotifReadApi } from "../services/api";
 
 const NotificationContext = createContext();
 
 export function NotificationProvider({ children }) {
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadNotifications = useCallback(async () => {
+    const userId = localStorage.getItem('studentId') || localStorage.getItem('userId');
+    if (!userId) return;
+    
+    setLoading(true);
+    try {
+      const { data } = await fetchNotificationsApi(userId);
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const markAsRead = useCallback(async (id) => {
     // Optimistic local update
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+    setNotifications((prev) => prev.map((n) => (n._id === id || n.id === id ? { ...n, isRead: true } : n)));
     try {
       await markNotifReadApi(id);
     } catch {
@@ -26,8 +46,8 @@ export function NotificationProvider({ children }) {
   const addNotification = useCallback(async (payload) => {
     // Build local entry immediately for instant UI feedback
     const localEntry = {
-      id: Date.now().toString(),
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " Today",
+      _id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
       isRead: false,
       isImportant: false,
       type: "system",
@@ -46,7 +66,7 @@ export function NotificationProvider({ children }) {
   }, []);
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, addNotification }}>
+    <NotificationContext.Provider value={{ notifications, loading, unreadCount, markAsRead, markAllAsRead, addNotification, refreshNotifications: loadNotifications }}>
       {children}
     </NotificationContext.Provider>
   );

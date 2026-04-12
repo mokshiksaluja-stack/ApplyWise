@@ -10,6 +10,33 @@ exports.getJobs = async (req, res) => {
   }
 };
 
+exports.getStudentJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find({ 
+      isDraft: false, 
+      status: { $in: ['Open', 'Ongoing'] } 
+    }).sort({
+      isFeatured: -1,
+      deadline: 1,
+      createdAt: -1
+    });
+    res.json(jobs);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+exports.getCoordinatorJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find({ 
+      assignedCoordinatorId: req.params.coordinatorId 
+    }).sort({ createdAt: -1 });
+    res.json(jobs);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 exports.getJobById = async (req, res) => {
   try {
     const job = await Job.findById(req.params.id);
@@ -25,6 +52,15 @@ exports.createJob = async (req, res) => {
     if (!req.body || Object.keys(req.body).length === 0) {
       return res.status(400).json({ message: "Request body cannot be empty" });
     }
+    
+    // Validate required fields explicitly
+    const { company, role, opportunityType, employmentMode } = req.body;
+    if (!company || !role || !opportunityType || !employmentMode) {
+      return res.status(400).json({ 
+        message: "Validation error: company, role, opportunityType, and employmentMode are required fields" 
+      });
+    }
+
     const job = new Job(req.body);
     await job.save();
     res.status(201).json(job);
@@ -60,10 +96,14 @@ exports.deleteJob = async (req, res) => {
 
 exports.assignCoordinator = async (req, res) => {
   try {
-    const { coordinatorId } = req.body; // null = unassign
+    const { coordinatorId, coordinatorName } = req.body; // null = unassign
     const job = await Job.findByIdAndUpdate(
       req.params.id,
-      { $set: { assignedCoordinatorId: coordinatorId || null } },
+      { $set: { 
+          assignedCoordinatorId: coordinatorId || null,
+          assignedCoordinatorName: coordinatorName || null 
+        } 
+      },
       { new: true }
     );
     if (!job) return res.status(404).json({ message: "Job not found" });
