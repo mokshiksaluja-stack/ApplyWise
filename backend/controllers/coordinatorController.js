@@ -3,12 +3,27 @@ const Application = require('../models/Application');
 const Interview = require('../models/Interview');
 const CoordinatorActivityLog = require('../models/CoordinatorActivityLog');
 const CoordinatorProfile = require('../models/CoordinatorProfile');
+const User = require('../models/User');
 
 // ── Configuration ──────────────────────────────────────────────────────────
 const LOW_PERFORMANCE_THRESHOLD = 5; // Total actions in 7 days
 const TOP_PERFORMANCE_THRESHOLD = 20; // Total actions in 7 days
 const ACTIVITY_WINDOW_DAYS = 7;
 const CoordinatorTask = require('../models/CoordinatorTask');
+
+// List all coordinator users (for Admin assignment dropdown)
+const listCoordinators = async (req, res) => {
+  try {
+    const coordinators = await User.find({ role: 'coordinator' }).select('_id email name');
+    res.json(coordinators.map(c => ({
+      id: c._id,
+      name: c.name || c.email.split('@')[0], // fallback to email prefix if no name
+      email: c.email
+    })));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 // Get assigned drives with live applicant counts
 const getAssignedDrives = async (req, res) => {
@@ -196,6 +211,7 @@ const getMonitoringSummary = async (req, res) => {
 };
 
 module.exports = {
+  listCoordinators,
   getAssignedDrives,
   getCoordinatorTasks,
   getAllPendingTasks,

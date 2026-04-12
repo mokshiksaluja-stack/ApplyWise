@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const coordinatorController = require('../controllers/coordinatorController');
 
+// List all coordinators (for Admin assignment dropdown)
+router.get('/list', coordinatorController.listCoordinators);
+
 // Opportunities
 router.get('/jobs/:coordinatorId', coordinatorController.getAssignedDrives);
 router.get('/tasks/all', coordinatorController.getAllPendingTasks);

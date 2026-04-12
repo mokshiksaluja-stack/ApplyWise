@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
-import { assignCoordinatorApi, fetchOpportunities, fetchCoordinatorMonitoring } from "../services/api";
+import { assignCoordinatorApi, fetchOpportunities, fetchCoordinatorList } from "../services/api";
 
 const AdminCoordinatorContext = createContext();
 
@@ -14,25 +14,20 @@ export function AdminCoordinatorProvider({ children }) {
   useEffect(() => {
     const loadRealData = async () => {
       try {
-        const [oppRes, monitoringRes] = await Promise.all([
+        const [oppRes, coordRes] = await Promise.all([
            fetchOpportunities(),
-           fetchCoordinatorMonitoring()
+           fetchCoordinatorList()   // reads from users collection directly — always has coordinators
         ]);
         
         setOpportunities(oppRes.data.map(opp => ({
           ...opp,
-          id: opp._id, // map for Admin UI compatibility
-          type: opp.opportunityType || 'Full-time' // Admin UI expects 'type'
+          id: opp._id,
+          type: opp.opportunityType || 'Full-time'
         })));
         
-        if (monitoringRes.data && monitoringRes.data.fullMetrics) {
-           setCoordinators(monitoringRes.data.fullMetrics.map(m => ({
-              id: m.coordinatorId,
-              name: m.name,
-              email: m.email,
-              tasksCompleted: m.stats?.totalActions || 0,
-              tier: m.tier
-           })));
+        // coordRes.data is already mapped by backend: [{ id, name, email }]
+        if (Array.isArray(coordRes.data)) {
+          setCoordinators(coordRes.data);
         }
       } catch (err) {
         console.error("Failed to load data for context", err);

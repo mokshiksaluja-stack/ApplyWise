@@ -101,6 +101,7 @@ export const fetchPrepResources = (params) => API.get('/prep', { params });
 
 // ── Coordinator Monitoring ───────────────────────────────────────────────
 export const fetchCoordinatorMonitoring = () => API.get('/coordinator/monitor');
+export const fetchCoordinatorList = () => API.get('/coordinator/list');
 export const fetchCoordinatorTasksApi = (coordinatorId) => API.get(`/coordinator/tasks/${coordinatorId}`);
 export const fetchAllCoordinatorTasksApi = () => API.get('/coordinator/tasks/all');
 
