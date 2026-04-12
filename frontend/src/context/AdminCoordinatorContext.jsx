@@ -4,11 +4,7 @@ import { assignCoordinatorApi, fetchOpportunities, fetchCoordinatorMonitoring } 
 const AdminCoordinatorContext = createContext();
 
 const getLoggedInCoordinatorId = () => {
-  try {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (user && user.id) return user.id;
-  } catch {}
-  return "60d5ecb8b392d700153abcd1"; // Dev fallback
+  return localStorage.getItem('userId') || null;
 };
 
 export function AdminCoordinatorProvider({ children }) {

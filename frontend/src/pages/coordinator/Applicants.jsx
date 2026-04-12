@@ -52,11 +52,10 @@ export default function Applicants() {
   const [filterRound, setFilterRound] = useState("");
 
   const loadApplications = useCallback(async (silent = false) => {
-    // Get the coordinator ID directly from localStorage to be safe
-    const coordId = currentCoordinatorId || JSON.parse(localStorage.getItem('user') || '{}')?.id;
-    if (!coordId || coordId === 'null') return;
-    if (!silent) { /* keep existing loading state true */ }
-    else setRefreshing(true);
+    // Read directly from localStorage — context has a hardcoded fallback that breaks this
+    const coordId = localStorage.getItem('userId');
+    if (!coordId || coordId === 'null' || coordId === 'undefined') return;
+    if (silent) setRefreshing(true);
     try {
       const { data } = await fetchCoordinatorApplicationsApi(coordId);
       setApplications(Array.isArray(data) ? data : []);
@@ -68,7 +67,7 @@ export default function Applicants() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [currentCoordinatorId, showToast]);
+  }, [showToast]);
 
   useEffect(() => {
     loadApplications();

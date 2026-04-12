@@ -3,12 +3,7 @@ import { Search, MapPin, Users, Calendar, ArrowRight, Activity, Clock, SlidersHo
 import { useNavigate } from 'react-router-dom';
 import { fetchCoordinatorOpportunities } from '../../services/api';
 
-const getCoordinatorId = () => {
-  try {
-    const user = JSON.parse(localStorage.getItem('user'));
-    return user?.id || null;
-  } catch { return null; }
-};
+const getCoordinatorId = () => localStorage.getItem('userId') || null;
 
 const getStatusColor = (status) => {
   switch (status) {
