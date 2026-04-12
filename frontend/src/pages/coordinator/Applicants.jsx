@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Search, Filter, CheckCircle, XCircle, ChevronRight, Mail, Eye, MoreVertical, Download, Users, UserCheck, UserMinus, AlertCircle, Loader2, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Search, Filter, CheckCircle, XCircle, ChevronRight, Mail, Eye, MoreVertical, Download, Users, UserCheck, UserMinus, AlertCircle, Loader2, ShieldCheck, RefreshCw } from 'lucide-react';
 import { useAdminCoordinatorContext } from '../../context/AdminCoordinatorContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useToast } from '../../context/ToastContext';
@@ -39,6 +39,8 @@ export default function Applicants() {
 
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [actionDropdown, setActionDropdown] = useState(null);
@@ -49,21 +51,33 @@ export default function Applicants() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterRound, setFilterRound] = useState("");
 
-  const loadApplications = useCallback(async () => {
-    if (!currentCoordinatorId) return;
+  const loadApplications = useCallback(async (silent = false) => {
+    // Get the coordinator ID directly from localStorage to be safe
+    const coordId = currentCoordinatorId || JSON.parse(localStorage.getItem('user') || '{}')?.id;
+    if (!coordId || coordId === 'null') return;
+    if (!silent) { /* keep existing loading state true */ }
+    else setRefreshing(true);
     try {
-      const { data } = await fetchCoordinatorApplicationsApi(currentCoordinatorId);
+      const { data } = await fetchCoordinatorApplicationsApi(coordId);
       setApplications(Array.isArray(data) ? data : []);
+      setLastUpdated(new Date());
     } catch (err) {
       console.error("Failed to load coordinator applications", err);
-      showToast("Failed to load applicants. Please refresh.", "error");
+      if (!silent) showToast("Failed to load applicants. Please refresh.", "error");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [currentCoordinatorId, showToast]);
 
   useEffect(() => {
     loadApplications();
+  }, [loadApplications]);
+
+  // Poll every 30 seconds for new applications
+  useEffect(() => {
+    const interval = setInterval(() => loadApplications(true), 30000);
+    return () => clearInterval(interval);
   }, [loadApplications]);
 
   // ── Derived filter options ──────────────────────────────────────────────
@@ -143,6 +157,8 @@ export default function Applicants() {
         await updateAppStatusApi(appId, { status: 'Rejected' });
         showToast(`${studentName}'s application has been rejected.`, "error");
       }
+      // ✅ Refresh applicants list after every action so UI reflects latest DB state
+      await loadApplications(true);
     } catch (err) {
       showToast("Failed to update status. Try again.", "error");
     }
@@ -170,10 +186,25 @@ export default function Applicants() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Applicants Portal</h1>
-          <p className="text-sm font-medium text-gray-500 mt-1">Operational control for student status tracking and drive management.</p>
+          <p className="text-sm font-medium text-gray-500 mt-1">
+            Operational control for student status tracking and drive management.
+            {lastUpdated && (
+              <span className="ml-2 text-[11px] text-gray-400">
+                · Synced {lastUpdated.toLocaleTimeString()}
+              </span>
+            )}
+          </p>
         </div>
         
         <div className="flex items-center gap-3 w-full sm:w-auto">
+          <button
+            onClick={() => loadApplications(true)}
+            disabled={refreshing}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl bg-white text-sm font-semibold text-gray-600 hover:bg-gray-50 transition shadow-sm disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-indigo-500' : ''}`} />
+            {refreshing ? 'Syncing...' : 'Refresh'}
+          </button>
           <button className="flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-gray-900/10 hover:bg-blue-600 transition-all active:scale-95">
             <Download size={14} /> Export Manifest
           </button>

@@ -10,12 +10,23 @@ const TOP_PERFORMANCE_THRESHOLD = 20; // Total actions in 7 days
 const ACTIVITY_WINDOW_DAYS = 7;
 const CoordinatorTask = require('../models/CoordinatorTask');
 
-// Get assigned drives
+// Get assigned drives with live applicant counts
 const getAssignedDrives = async (req, res) => {
   try {
+    const mongoose = require('mongoose');
     const { coordinatorId } = req.params;
-    const drives = await Job.find({ assignedCoordinatorId: coordinatorId });
-    res.status(200).json(drives);
+    if (!coordinatorId || !mongoose.Types.ObjectId.isValid(coordinatorId)) {
+      return res.status(200).json([]);
+    }
+    const drives = await Job.find({ assignedCoordinatorId: coordinatorId }).sort({ createdAt: -1 });
+    
+    // Attach live applicant counts for each drive
+    const drivesWithCounts = await Promise.all(drives.map(async (drive) => {
+      const count = await Application.countDocuments({ jobId: drive._id });
+      return { ...drive.toObject(), applicantCount: count };
+    }));
+    
+    res.status(200).json(drivesWithCounts);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

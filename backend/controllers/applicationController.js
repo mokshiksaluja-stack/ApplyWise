@@ -35,8 +35,13 @@ exports.getOpportunityApplications = async (req, res) => {
 
 exports.getCoordinatorApplications = async (req, res) => {
   try {
+    const mongoose = require('mongoose');
+    const { coordinatorId } = req.params;
+    if (!coordinatorId || !mongoose.Types.ObjectId.isValid(coordinatorId)) {
+      return res.json([]);
+    }
     // Find all jobs assigned to this coordinator
-    const assignedJobs = await Job.find({ assignedCoordinatorId: req.params.coordinatorId }).select('_id');
+    const assignedJobs = await Job.find({ assignedCoordinatorId: coordinatorId }).select('_id');
     const jobIds = assignedJobs.map(j => j._id);
 
     const applications = await Application.find({ jobId: { $in: jobIds } })
