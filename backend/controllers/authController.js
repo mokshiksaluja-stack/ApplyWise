@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Student = require('../models/Student');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -46,7 +47,18 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'supersecret_fallback_key', { expiresIn: '1d' });
 
-    res.json({ success: true, user: { id: user._id, email: user.email, role: user.role }, token });
+    // For student role, also look up the Student document to get the correct studentId
+    let studentId = null;
+    if (user.role === 'student') {
+      const studentDoc = await Student.findOne({ userId: user._id }).select('_id');
+      if (studentDoc) studentId = studentDoc._id;
+    }
+
+    res.json({ 
+      success: true, 
+      user: { id: user._id, email: user.email, role: user.role, studentId }, 
+      token 
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }

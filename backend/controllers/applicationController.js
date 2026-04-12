@@ -51,7 +51,15 @@ exports.getCoordinatorApplications = async (req, res) => {
 
 exports.getStudentApplications = async (req, res) => {
   try {
-    const applications = await Application.find({ studentId: req.params.studentId });
+    const mongoose = require('mongoose');
+    const { studentId } = req.params;
+    // Guard against invalid ObjectId strings (e.g. "null", "undefined", malformed)
+    if (!studentId || !mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.json([]);
+    }
+    const applications = await Application.find({ studentId })
+      .populate('jobId', 'company role')
+      .sort({ createdAt: -1 });
     res.json(applications);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });

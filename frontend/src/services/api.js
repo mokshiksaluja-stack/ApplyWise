@@ -23,9 +23,12 @@ API.interceptors.response.use(
     } else {
       switch (response.status) {
         case 401:
-          // Unauthorized - Clear session and redirect
+          // True unauthorized - token expired or missing. Clear session and redirect.
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          localStorage.removeItem('userRole');
+          localStorage.removeItem('userId');
+          localStorage.removeItem('studentId');
           if (window.location.pathname !== '/login') {
             window.location.href = '/login';
           }
@@ -36,19 +39,11 @@ API.interceptors.response.use(
           }));
           break;
         case 500:
-          // Catch legacy dummy IDs causing Mongoose CastErrors
-          if (response.data && response.data.error && response.data.error.includes('Cast to ObjectId')) {
-             console.warn("Legacy dummy ID detected. Resetting session...");
-             localStorage.clear();
-             window.location.href = '/login';
-             break;
-          }
-          window.dispatchEvent(new CustomEvent('api-error', { 
-            detail: { message: 'Internal server error. Please try again later.', type: 'error' } 
-          }));
+          // Do NOT wipe session on 500s - backend errors should not log out users.
+          // CastErrors caused by bad IDs are now handled at the backend (returns [] or 404).
+          console.warn('[API 500]', response.data?.message || response.data?.error || 'Server error');
           break;
         default:
-          // Local components can still catch and handle specific errors
           break;
       }
     }

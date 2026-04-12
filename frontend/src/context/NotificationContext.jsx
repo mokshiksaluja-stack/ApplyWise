@@ -9,7 +9,7 @@ export function NotificationProvider({ children }) {
 
   const loadNotifications = useCallback(async () => {
     const userId = localStorage.getItem('studentId') || localStorage.getItem('userId');
-    if (!userId) return;
+    if (!userId || userId === 'null' || userId === 'undefined') return;
     
     setLoading(true);
     try {

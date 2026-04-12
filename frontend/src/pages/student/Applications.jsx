@@ -31,7 +31,8 @@ export default function Applications() {
     const loadApplications = async () => {
       try {
         const studentId = localStorage.getItem('studentId') || localStorage.getItem('userId');
-        if (!studentId) {
+        // Guard against missing or literal "null" string stored during stale sessions
+        if (!studentId || studentId === 'null' || studentId === 'undefined') {
           setLoading(false);
           return;
         }
@@ -39,13 +40,13 @@ export default function Applications() {
         setApplications(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Failed to load student applications:', err);
-        showToast('Failed to load applications.', 'error');
+        // Do NOT show toast for empty states — just silently show empty list
       } finally {
         setLoading(false);
       }
     };
     loadApplications();
-  }, [showToast]);
+  }, []);
 
   const filteredApplications = useMemo(() => {
     return applications.filter((app) => {

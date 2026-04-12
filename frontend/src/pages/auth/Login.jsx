@@ -31,6 +31,12 @@ export default function Login() {
         localStorage.setItem('userRole', user.role);
         localStorage.setItem('userId', user.id);
         localStorage.setItem('user', JSON.stringify(user));
+        // Store studentId for student portal pages (Student doc _id != User doc _id)
+        if (user.role === 'student' && user.studentId) {
+          localStorage.setItem('studentId', user.studentId);
+        } else {
+          localStorage.removeItem('studentId'); // ensure no stale studentId for admins/coordinators
+        }
 
         // Clean RBAC redirect
         const destination = ROLE_REDIRECT[user.role] || '/student/dashboard';
