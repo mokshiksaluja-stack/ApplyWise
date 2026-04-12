@@ -1,9 +1,7 @@
-import { dashboardData } from '../models/data';
 import { fetchOpportunities, fetchOpportunityById, createOpportunityApi, fetchStudents, fetchApplications, fetchInterviews, createApplicationApi, fetchStudentApplications } from '../services/api';
-import { opportunitiesList } from '../data/dummyOpportunities';
 
 export const DashboardController = {
-  getStats: () => dashboardData.stats,
+  getStats: () => [],
 
   getOpportunities: async () => {
     try {
@@ -27,10 +25,6 @@ export const DashboardController = {
 
   getOpportunityById: async (id) => {
     try {
-      if (id && id.toString().length < 10) {
-        const dummyJob = opportunitiesList.find(op => op.id.toString() === id.toString());
-        if (dummyJob) return dummyJob;
-      }
       const { data } = await fetchOpportunityById(id);
       return data;
     } catch (err) {
@@ -55,13 +49,10 @@ export const DashboardController = {
     }
   },
 
-  getTasks: (filter = 'All') => {
-    if (filter === 'All') return dashboardData.tasks;
-    return dashboardData.tasks.filter(task => task.status === filter);
-  },
+  getTasks: (filter = 'All') => [],
   
-  getTaskById: (id) => dashboardData.tasks.find(task => task.id === parseInt(id)),
-  getCoordinators: () => dashboardData.coordinators,
+  getTaskById: (id) => null,
+  getCoordinators: () => [],
   
   getStudents: async () => {
     try {
@@ -104,46 +95,21 @@ export const DashboardController = {
     }
   },
 
-  getTaskDistribution: () => dashboardData.taskDistribution,
-  getApplicationOverview: () => dashboardData.applicationOverview,
-  getAnalyticsSummary: () => dashboardData.analyticsSummary,
-  getNotifications: () => dashboardData.notifications,
+  getTaskDistribution: () => [],
+  getApplicationOverview: () => [],
+  getAnalyticsSummary: () => null,
+  getNotifications: () => [],
   
-  markAsRead: (id) => {
-    const notif = dashboardData.notifications.find(n => n.id === parseInt(id));
-    if (notif) { notif.read = true; return true; }
-    return false;
-  },
+  markAsRead: (id) => false,
   
   searchAll: (query) => {
-    if (!query) return { jobs: [], tasks: [] };
-    const q = query.toLowerCase();
-    const matchedJobs = dashboardData.opportunities.filter(job => 
-      job.company.toLowerCase().includes(q) || job.role.toLowerCase().includes(q)
-    );
-    const matchedTasks = dashboardData.tasks.filter(task => 
-      task.title.toLowerCase().includes(q) || task.assignee.toLowerCase().includes(q)
-    );
-    return { jobs: matchedJobs, tasks: matchedTasks };
+    return { jobs: [], tasks: [] };
   },
   
-  filterDataByTime: (range) => {
-    let scale = 1;
-    if (range === 'Last 7 days') scale = 0.1;
-    if (range === 'Last 1 month') scale = 0.3;
-    if (range === 'Last 3 months') scale = 0.6;
-    return dashboardData.stats.map(stat => ({
-      ...stat,
-      value: Math.max(1, Math.round(parseInt(stat.value) * scale)).toString()
-    }));
-  },
+  filterDataByTime: (range) => [],
   
-  getMessages: () => dashboardData.messages,
-  getMessageById: (id) => dashboardData.messages.find(msg => msg.id === parseInt(id)),
+  getMessages: () => [],
+  getMessageById: (id) => null,
   
-  markMessageAsRead: (id) => {
-    const msg = dashboardData.messages.find(m => m.id === parseInt(id));
-    if (msg) { msg.unread = false; return true; }
-    return false;
-  }
+  markMessageAsRead: (id) => false
 };

@@ -11,8 +11,8 @@ const Interview = require('./models/Interview');
 
 const seedDB = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI);
-        console.log("Connected to MongoDB for seeding...");
+        const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/applywise_db');
+        console.log(`Connected to MongoDB Database for seeding (${conn.connection.name})...`);
 
         // Clear existing data
         await User.deleteMany({});
@@ -39,14 +39,16 @@ const seedDB = async () => {
         ];
         const studentUsers = await User.insertMany(studentUsersData);
 
-        // Create Students
-        const students = await Student.insertMany([
-            { name: "John Doe", email: "student1@college.edu", course: "B.Tech Computer Science", year: "4th Year", status: "Not Placed" },
-            { name: "Jane Smith", email: "student2@college.edu", course: "B.Tech IT", year: "3rd Year", status: "Placed" },
-            { name: "Sam Wilson", email: "student3@college.edu", course: "MBA", year: "2nd Year", status: "Not Placed" },
-            { name: "Emily Clark", email: "emily@college.edu", course: "B.Tech ECE", year: "4th Year", status: "Not Placed" },
-            { name: "Michael Gray", email: "michael@college.edu", course: "MCA", year: "3rd Year", status: "Placed" }
-        ]);
+        // Create Students (Bypass validation due to many new required fields)
+        const studentsData = [
+            { _id: new mongoose.Types.ObjectId(), name: "John Doe", fullName: "John Doe", enrollmentNumber: "111", email: "student1@college.edu", course: "B.Tech Computer Science", year: "4th Year", status: "Not Placed" },
+            { _id: new mongoose.Types.ObjectId(), name: "Jane Smith", fullName: "Jane Smith", enrollmentNumber: "222", email: "student2@college.edu", course: "B.Tech IT", year: "3rd Year", status: "Placed" },
+            { _id: new mongoose.Types.ObjectId(), name: "Sam Wilson", fullName: "Sam Wilson", enrollmentNumber: "333", email: "student3@college.edu", course: "MBA", year: "2nd Year", status: "Not Placed" },
+            { _id: new mongoose.Types.ObjectId(), name: "Emily Clark", fullName: "Emily Clark", enrollmentNumber: "444", email: "emily@college.edu", course: "B.Tech ECE", year: "4th Year", status: "Not Placed" },
+            { _id: new mongoose.Types.ObjectId(), name: "Michael Gray", fullName: "Michael Gray", enrollmentNumber: "555", email: "michael@college.edu", course: "MCA", year: "3rd Year", status: "Placed" }
+        ];
+        await Student.collection.insertMany(studentsData);
+        const students = studentsData;
 
         // Create Jobs
         const jobs = await Job.insertMany([

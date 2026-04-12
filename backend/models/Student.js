@@ -66,17 +66,24 @@ const studentSchema = new mongoose.Schema({
   profileVisibility: { type: String, required: true },
 
   // Admin status tracking
-  status: { type: String, default: "Not Placed" }
+  status: { type: String, default: "Not Placed" },
+  isDemoData: { type: Boolean, default: false },
+  demoBatch: { type: String, default: null }
 
 }, {
-  timestamps: true // Automatically adds createdAt and updatedAt fields
+  timestamps: true, // Automatically adds createdAt and updatedAt fields
+  collection: 'students' // [EXPLICIT DB CONFIG] Forces data to live in 'students' collection
 });
 
 // Middleware to sync full name to admin name where needed
-studentSchema.pre('save', function(next) {
+studentSchema.pre('save', function() {
   if (this.fullName && !this.name) this.name = this.fullName;
   if (this.collegeEmail && !this.email) this.email = this.collegeEmail;
-  next();
 });
 
-module.exports = mongoose.model('Student', studentSchema);
+const StudentModel = mongoose.model('Student', studentSchema);
+
+// [EXPLICIT DB CONFIG] Server startup log to verify model/collection identity
+console.log(`[Model Init] 'Student' model mapped directly to MongoDB collection: '${StudentModel.collection.name}'`);
+
+module.exports = StudentModel;

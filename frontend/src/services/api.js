@@ -36,6 +36,13 @@ API.interceptors.response.use(
           }));
           break;
         case 500:
+          // Catch legacy dummy IDs causing Mongoose CastErrors
+          if (response.data && response.data.error && response.data.error.includes('Cast to ObjectId')) {
+             console.warn("Legacy dummy ID detected. Resetting session...");
+             localStorage.clear();
+             window.location.href = '/login';
+             break;
+          }
           window.dispatchEvent(new CustomEvent('api-error', { 
             detail: { message: 'Internal server error. Please try again later.', type: 'error' } 
           }));
@@ -99,5 +106,7 @@ export const fetchPrepResources = (params) => API.get('/prep', { params });
 
 // ── Coordinator Monitoring ───────────────────────────────────────────────
 export const fetchCoordinatorMonitoring = () => API.get('/coordinator/monitor');
+export const fetchCoordinatorTasksApi = (coordinatorId) => API.get(`/coordinator/tasks/${coordinatorId}`);
+export const fetchAllCoordinatorTasksApi = () => API.get('/coordinator/tasks/all');
 
 export default API;

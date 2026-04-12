@@ -5,7 +5,16 @@ const coordinatorActivityLogSchema = new mongoose.Schema({
   actionType: { type: String, required: true }, // e.g. 'Marked Attendance', 'Scheduled Interview'
   targetEntityId: { type: mongoose.Schema.Types.ObjectId }, // Flexible: could map to Application, Job, Interview
   targetEntityModel: { type: String }, // e.g. 'Application', 'Interview'
-  details: { type: String }
+  details: { type: String },
+  isDemoData: { type: Boolean, default: false },
+  demoBatch: { type: String, default: null },
+
+  // --- Readability & Audit Fields ---
+  relatedJobId: { type: mongoose.Schema.Types.ObjectId, ref: 'Job' },
+  relatedStudentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student' },
+  relatedApplicationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Application' }
 }, { timestamps: true });
 
-module.exports = mongoose.model('CoordinatorActivityLog', coordinatorActivityLogSchema);
+const CoordinatorActivityLogModel = mongoose.model('CoordinatorActivityLog', coordinatorActivityLogSchema, 'coordinatoractivitylogs');
+console.log(`[Model Init] 'CoordinatorActivityLog' model mapped directly to MongoDB collection: '${CoordinatorActivityLogModel.collection.name}'`);
+module.exports = CoordinatorActivityLogModel;

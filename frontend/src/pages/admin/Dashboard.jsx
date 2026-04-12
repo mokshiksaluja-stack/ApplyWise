@@ -10,7 +10,7 @@ import { DashboardController } from '../../controllers/dashboardController';
 import { ChevronRight, Calendar as CalendarIcon, ChevronDown, ListFilter, Briefcase, UserCheck, Target, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminCoordinatorContext } from '../../context/AdminCoordinatorContext';
-import { fetchDashboardAnalytics } from '../../services/api';
+import { fetchDashboardAnalytics, fetchAllCoordinatorTasksApi } from '../../services/api';
 
 // New specialized components
 import CompanyAppsChart from '../../components/CompanyAppsChart';
@@ -58,14 +58,19 @@ const Dashboard = () => {
         company: filters.company,
         role: filters.role
       };
-      const { data: analyticsData } = await fetchDashboardAnalytics(apiFilters);
-      setAnalytics(analyticsData);
       
-      const opps = await DashboardController.getOpportunities();
+      const [analyticsDataRes, opps, tasksRes] = await Promise.all([
+         fetchDashboardAnalytics(apiFilters),
+         DashboardController.getOpportunities(),
+         fetchAllCoordinatorTasksApi()
+      ]);
+      
+      setAnalytics(analyticsDataRes.data);
+      
       setData({
         stats: [], // handled by analytics now
         opportunities: opps || [],
-        tasks: DashboardController.getTasks(),
+        tasks: tasksRes.data || [],
         taskDistribution: [], // handled by analytics now
         applicationOverview: DashboardController.getApplicationOverview()
       });

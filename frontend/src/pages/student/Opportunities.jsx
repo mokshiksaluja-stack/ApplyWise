@@ -54,6 +54,7 @@ export default function Opportunities() {
         missingSkills: evalResult.missingSkills,
         matchedCount: evalResult.skillMatchCount,
         totalCount: evalResult.totalSkills,
+        readinessScore: evalResult.readinessScore,
         eligibilityReason: evalResult.reasons.join(" ")
       };
     });
@@ -138,7 +139,7 @@ export default function Opportunities() {
                 matchedCount={opp.matchedCount}
                 totalCount={opp.totalCount}
                 missingSkills={opp.missingSkills}
-                readinessScore={opp.readinessScore || opp.matchedCount ? Math.round((opp.matchedCount / opp.totalCount) * 100) : 0}
+                readinessScore={opp.readinessScore}
               />
             </div>
           ))}

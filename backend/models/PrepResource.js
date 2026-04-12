@@ -24,6 +24,10 @@ const prepResourceSchema = new mongoose.Schema({
   tags: [{ type: String }],
   linkLabel: { type: String, default: 'Open Resource' },
   linkUrl: { type: String, default: '#' },
+  isDemoData: { type: Boolean, default: false },
+  demoBatch: { type: String, default: null }
 }, { timestamps: true });
 
-module.exports = mongoose.model('PrepResource', prepResourceSchema);
+const PrepResourceModel = mongoose.model('PrepResource', prepResourceSchema, 'prepresources');
+console.log(`[Model Init] 'PrepResource' model mapped directly to MongoDB collection: '${PrepResourceModel.collection.name}'`);
+module.exports = PrepResourceModel;

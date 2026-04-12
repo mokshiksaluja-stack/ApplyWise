@@ -4,16 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminCoordinatorContext } from '../../context/AdminCoordinatorContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useToast } from '../../context/ToastContext';
-import { fetchCoordinatorOpportunities } from '../../services/api';
+import { fetchCoordinatorOpportunities, fetchCoordinatorTasksApi } from '../../services/api';
 import Skeleton from '../../components/UI/Skeleton';
 import EmptyState from '../../components/UI/EmptyState';
 import clsx from 'clsx';
-
-const pendingTasks = [
-  { id: 101, title: "Finalize venue for Google OA", deadline: "Today, 04:00 PM", priority: "High" },
-  { id: 102, title: "Upload shortlisted candidates for Microsoft", deadline: "Tomorrow, 10:00 AM", priority: "Medium" },
-  { id: 103, title: "Send interview invites for Amazon Round 2", deadline: "Tomorrow, 02:00 PM", priority: "High" },
-];
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -22,16 +16,20 @@ export default function Dashboard() {
   const { showToast } = useToast();
   
   const [loading, setLoading] = useState(true);
-  const [tasks, setTasks] = React.useState(pendingTasks);
+  const [tasks, setTasks] = React.useState([]);
   const [assignedDrives, setAssignedDrives] = useState([]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const { data } = await fetchCoordinatorOpportunities(currentCoordinatorId);
-        setAssignedDrives(data);
+        const [drivesRes, tasksRes] = await Promise.all([
+           fetchCoordinatorOpportunities(currentCoordinatorId),
+           fetchCoordinatorTasksApi(currentCoordinatorId)
+        ]);
+        setAssignedDrives(drivesRes.data);
+        setTasks(tasksRes.data);
       } catch (err) {
-        console.error("Failed to load assigned drives", err);
+        console.error("Failed to load coordinator dashboard data", err);
       } finally {
         setLoading(false);
       }
@@ -144,8 +142,10 @@ export default function Dashboard() {
                 className="py-10 border-0 shadow-none bg-gray-50/50"
               />
             ) : (
-                tasks.map(task => (
-                <div key={task.id} className="group relative flex items-center justify-between p-6 rounded-[24px] border border-gray-50 bg-gray-50/30 hover:bg-white hover:shadow-xl hover:shadow-gray-200/40 hover:border-blue-100 transition-all cursor-pointer overflow-hidden">
+                tasks.map(task => {
+                  const taskId = task._id || task.id;
+                  return (
+                <div key={taskId} className="group relative flex items-center justify-between p-6 rounded-[24px] border border-gray-50 bg-gray-50/30 hover:bg-white hover:shadow-xl hover:shadow-gray-200/40 hover:border-blue-100 transition-all cursor-pointer overflow-hidden">
                    <div className={clsx("absolute top-0 left-0 bottom-0 w-1.5", task.priority === 'High' ? 'bg-rose-500' : 'bg-amber-500')}></div>
                    <div className="flex flex-col gap-1">
                       <h4 className="text-base font-black text-gray-900 tracking-tight">{task.title}</h4>
@@ -154,17 +154,17 @@ export default function Dashboard() {
                            <AlertCircle size={12} /> {task.priority} Priority
                          </span>
                          <span className="w-1 h-1 rounded-full bg-gray-200"></span>
-                         <span className="flex items-center gap-1.5"><Clock size={12} /> {task.deadline}</span>
+                         <span className="flex items-center gap-1.5"><Clock size={12} /> {task.deadline ? new Date(task.deadline).toLocaleDateString() : 'N/A'}</span>
                       </div>
                    </div>
                    <button 
-                     onClick={(e) => handleTaskComplete(e, task.id)}
+                     onClick={(e) => handleTaskComplete(e, taskId)}
                      className="bg-white border border-gray-100 p-3 rounded-2xl text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-100 transition-all shadow-sm active:scale-90"
                    >
                      <CheckCircle size={20} />
                    </button>
                 </div>
-              ))
+                )})
             )}
           </div>
         </div>

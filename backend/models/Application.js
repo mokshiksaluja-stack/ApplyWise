@@ -17,7 +17,17 @@ const applicationSchema = new mongoose.Schema({
   interviewDate: { type: String },
   reportingTime: { type: String },
   venue: { type: String },
-  coordinatorNotes: { type: String }
+  coordinatorNotes: { type: String },
+  isDemoData: { type: Boolean, default: false },
+  demoBatch: { type: String, default: null },
+
+  // --- Readability & Audit Fields ---
+  lastUpdatedByRole: { type: String, enum: ['student', 'coordinator', 'admin'] },
+  lastUpdatedById: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  relatedCoordinatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  moduleSource: { type: String, default: 'StudentPortal' }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Application', applicationSchema);
+const ApplicationModel = mongoose.model('Application', applicationSchema, 'applications');
+console.log(`[Model Init] 'Application' model mapped directly to MongoDB collection: '${ApplicationModel.collection.name}'`);
+module.exports = ApplicationModel;

@@ -14,7 +14,11 @@ const coordinatorProfileSchema = new mongoose.Schema({
     totalActions: { type: Number, default: 0 }
   },
   lastActive: { type: Date, default: Date.now },
-  isActive: { type: Boolean, default: true }
+  isActive: { type: Boolean, default: true },
+  isDemoData: { type: Boolean, default: false },
+  demoBatch: { type: String, default: null }
 }, { timestamps: true });
 
-module.exports = mongoose.model('CoordinatorProfile', coordinatorProfileSchema);
+const CoordinatorProfileModel = mongoose.model('CoordinatorProfile', coordinatorProfileSchema, 'coordinatorprofiles');
+console.log(`[Model Init] 'CoordinatorProfile' model mapped directly to MongoDB collection: '${CoordinatorProfileModel.collection.name}'`);
+module.exports = CoordinatorProfileModel;

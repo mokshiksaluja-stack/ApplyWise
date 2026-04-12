@@ -8,7 +8,7 @@ const CoordinatorProfile = require('../models/CoordinatorProfile');
 const LOW_PERFORMANCE_THRESHOLD = 5; // Total actions in 7 days
 const TOP_PERFORMANCE_THRESHOLD = 20; // Total actions in 7 days
 const ACTIVITY_WINDOW_DAYS = 7;
-// ───────────────────────────────────────────────────────────────────────────
+const CoordinatorTask = require('../models/CoordinatorTask');
 
 // Get assigned drives
 const getAssignedDrives = async (req, res) => {
@@ -16,6 +16,29 @@ const getAssignedDrives = async (req, res) => {
     const { coordinatorId } = req.params;
     const drives = await Job.find({ assignedCoordinatorId: coordinatorId });
     res.status(200).json(drives);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Get pending tasks for a specific coordinator
+const getCoordinatorTasks = async (req, res) => {
+  try {
+    const { coordinatorId } = req.params;
+    const tasks = await CoordinatorTask.find({ coordinatorId, status: 'Pending' }).sort({ deadline: 1 });
+    res.status(200).json(tasks);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Get ALL pending tasks (for Admin Dashboard)
+const getAllPendingTasks = async (req, res) => {
+  try {
+    const tasks = await CoordinatorTask.find({ status: 'Pending' })
+      .populate('coordinatorId', 'email name')
+      .sort({ deadline: 1 });
+    res.status(200).json(tasks);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -163,6 +186,8 @@ const getMonitoringSummary = async (req, res) => {
 
 module.exports = {
   getAssignedDrives,
+  getCoordinatorTasks,
+  getAllPendingTasks,
   updateApplicationStatus,
   createInterviewSlot,
   assignStudentToSlot,

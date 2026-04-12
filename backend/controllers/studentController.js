@@ -6,12 +6,17 @@ const Student = require('../models/Student');
 const saveStudentProfile = async (req, res) => {
   try {
     const profileData = req.body;
+    console.log(`\n--- [DEBUG] NEW STUDENT PROFILE SAVE INFO ---`);
+    console.log(`[Flow] DB Target: ${Student.db.name} | Collection: ${Student.collection.name}`);
+    console.log(`[Flow] Incoming Payload:`, JSON.stringify(profileData, null, 2));
+
     const existingStudent = await Student.findOne({ enrollmentNumber: profileData.enrollmentNumber });
     if (existingStudent) {
       return res.status(400).json({ message: "Student profile with this enrollment number already exists." });
     }
     const newStudent = new Student(profileData);
     const savedStudent = await newStudent.save();
+    console.log(`[Flow] Document successfully saved:`, savedStudent._id);
     res.status(201).json({
       message: "Student profile saved successfully!",
       student: savedStudent
@@ -44,11 +49,17 @@ const getStudentProfile = async (req, res) => {
 // @route   PUT /api/students/profile/:id
 const updateStudentProfile = async (req, res) => {
   try {
+    console.log(`\n--- [DEBUG] UPDATE STUDENT PROFILE INFO ---`);
+    console.log(`[Flow] DB Target: ${Student.db.name} | Collection: ${Student.collection.name}`);
+    console.log(`[Flow] Updating ID: ${req.params.id}`);
+    console.log(`[Flow] Incoming Payload:`, JSON.stringify(req.body, null, 2));
+
     const updatedStudent = await Student.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true, upsert: true, setDefaultsOnInsert: true } 
     );
+    console.log(`[Flow] Document successfully updated:`, updatedStudent._id);
     res.json({
       message: "Student profile updated successfully!",
       student: updatedStudent

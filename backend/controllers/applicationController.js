@@ -107,6 +107,7 @@ exports.createApplication = async (req, res) => {
     });
 
     await newApp.save();
+    console.log(`[Flow] Application Created: Student ${studentExists.name} applied for ${jobExists.company}`);
     res.status(201).json(newApp);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -139,6 +140,7 @@ exports.deleteApplication = async (req, res) => {
 const createStudentNotification = async (receiverId, title, message, type = 'General') => {
   try {
     await Notification.create({ receiverId, title, message, type });
+    console.log(`[Flow] Notification Created: Delivered to ${receiverId} [${type}]`);
   } catch (err) {
     console.error('Notification creation failed:', err.message);
   }

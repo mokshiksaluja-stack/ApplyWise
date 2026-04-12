@@ -14,7 +14,12 @@ export const saveStudentProfile = async (profileData) => {
       body: JSON.stringify(profileData),
     });
 
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      throw new Error(`API Error: Received invalid response from server (Status ${response.status}). Check if backend is running on the correct port.`);
+    }
 
     if (!response.ok) {
       const errorMessage = data.error ? `${data.message} (${data.error})` : data.message;
@@ -36,7 +41,12 @@ export const saveStudentProfile = async (profileData) => {
 export const fetchStudentProfile = async (id) => {
   try {
     const response = await fetch(`/api/students/profile/${id}`);
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      throw new Error(`API Error: Received invalid response from server (Status ${response.status}).`);
+    }
 
     if (!response.ok) {
       throw new Error(data.message || "Failed to fetch student profile.");
@@ -64,7 +74,12 @@ export const updateStudentProfile = async (id, profileData) => {
       body: JSON.stringify(profileData),
     });
 
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      throw new Error(`API Error: Received invalid response from server (Status ${response.status}).`);
+    }
 
     if (!response.ok) {
       throw new Error(data.message || "Something went wrong while updating the profile.");

@@ -12,9 +12,8 @@ exports.getJobs = async (req, res) => {
 
 exports.getStudentJobs = async (req, res) => {
   try {
-    const jobs = await Job.find({ 
-      isDraft: false, 
-      status: { $in: ['Open', 'Ongoing'] } 
+    const jobs = await Job.find({
+      status: { $in: ['Open', 'Ongoing'] }
     }).sort({
       isFeatured: -1,
       deadline: 1,
@@ -63,6 +62,7 @@ exports.createJob = async (req, res) => {
 
     const job = new Job(req.body);
     await job.save();
+    console.log(`[Flow] Job Created: ${job.role} at ${job.company}`);
     res.status(201).json(job);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -107,6 +107,8 @@ exports.assignCoordinator = async (req, res) => {
       { new: true }
     );
     if (!job) return res.status(404).json({ message: "Job not found" });
+    
+    console.log(`[Flow] Coordinator Assigned: Job ${req.params.id} assigned to ${coordinatorName || 'None'}`);
     res.json({ success: true, job });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });

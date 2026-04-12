@@ -90,7 +90,18 @@ const jobSchema = new mongoose.Schema({
   // Legacy mapping compatibility
   tags: [{ type: String }],
   applied: { type: Boolean, default: false },
-  type: { type: String }
+  type: { type: String },
+  isDemoData: { type: Boolean, default: false },
+  demoBatch: { type: String, default: null },
+
+  // --- Readability & Audit Fields ---
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  createdByRole: { type: String, enum: ['admin', 'coordinator'], default: 'admin' },
+  lastUpdatedByRole: { type: String },
+  lastUpdatedById: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  moduleSource: { type: String, default: 'AdminPortal' }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Job', jobSchema);
+const JobModel = mongoose.model('Job', jobSchema, 'jobs');
+console.log(`[Model Init] 'Job' model mapped directly to MongoDB collection: '${JobModel.collection.name}'`);
+module.exports = JobModel;

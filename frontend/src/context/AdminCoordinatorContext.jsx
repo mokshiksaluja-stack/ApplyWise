@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
-import { dashboardData } from "../models/data";
-import { assignCoordinatorApi, fetchOpportunities } from "../services/api";
+import { assignCoordinatorApi, fetchOpportunities, fetchCoordinatorMonitoring } from "../services/api";
 
 const AdminCoordinatorContext = createContext();
 
@@ -14,19 +13,33 @@ const getLoggedInCoordinatorId = () => {
 
 export function AdminCoordinatorProvider({ children }) {
   const [opportunities, setOpportunities] = useState([]);
-  const [coordinators, setCoordinators] = useState(dashboardData.coordinators);
+  const [coordinators, setCoordinators] = useState([]);
 
   useEffect(() => {
     const loadRealData = async () => {
       try {
-        const { data } = await fetchOpportunities();
-        setOpportunities(data.map(opp => ({
+        const [oppRes, monitoringRes] = await Promise.all([
+           fetchOpportunities(),
+           fetchCoordinatorMonitoring()
+        ]);
+        
+        setOpportunities(oppRes.data.map(opp => ({
           ...opp,
           id: opp._id, // map for Admin UI compatibility
           type: opp.opportunityType || 'Full-time' // Admin UI expects 'type'
         })));
+        
+        if (monitoringRes.data && monitoringRes.data.fullMetrics) {
+           setCoordinators(monitoringRes.data.fullMetrics.map(m => ({
+              id: m.coordinatorId,
+              name: m.name,
+              email: m.email,
+              tasksCompleted: m.stats?.totalActions || 0,
+              tier: m.tier
+           })));
+        }
       } catch (err) {
-        console.error("Failed to load opportunities for context", err);
+        console.error("Failed to load data for context", err);
       }
     };
     loadRealData();

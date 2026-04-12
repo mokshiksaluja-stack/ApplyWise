@@ -4,6 +4,8 @@ const coordinatorController = require('../controllers/coordinatorController');
 
 // Opportunities
 router.get('/jobs/:coordinatorId', coordinatorController.getAssignedDrives);
+router.get('/tasks/all', coordinatorController.getAllPendingTasks);
+router.get('/tasks/:coordinatorId', coordinatorController.getCoordinatorTasks);
 
 // Applications
 router.put('/applications/:id', coordinatorController.updateApplicationStatus);

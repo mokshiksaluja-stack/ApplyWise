@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Clock, CheckCircle, XCircle, ChevronRight, X, User, Building, MapPin, Calendar, FileText, Info, Search, Inbox, ArrowRight, ShieldCheck, Zap, Loader2 } from "lucide-react";
+import { Clock, CheckCircle, XCircle, ChevronRight, X, User, Building, MapPin, Calendar, FileText, Info, Search, Inbox, ArrowRight, ShieldCheck, Zap, Loader2, AlertCircle } from "lucide-react";
 import { fetchStudentApplications } from "../../services/api";
 import Skeleton from "../../components/UI/Skeleton";
 import EmptyState from "../../components/UI/EmptyState";

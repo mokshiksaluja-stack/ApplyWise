@@ -14,13 +14,14 @@ import { fetchStudentProfile } from "../../services/studentService";
 import { fetchStudentOpportunities } from "../../services/opportunityService";
 import { calculateProfileCompletion, calculateReadinessScore } from "../../utils/studentMetrics";
 import { evaluateEligibility } from "../../utils/eligibilityEngine";
-import { getDashboardRecommendedResources } from "../../utils/recommendationEngine";
+import { fetchPrepResources } from "../../services/api";
 import { BookOpen, FileText, Sparkles, Inbox, Briefcase } from "lucide-react";
 import ResourceModal from "../../components/dashboard/ResourceModal";
 
 export default function Dashboard() {
   const [profile, setProfile] = useState(null);
   const [opportunities, setOpportunities] = useState([]);
+  const [dashboardPrep, setDashboardPrep] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedResource, setSelectedResource] = useState(null);
   const navigate = useNavigate();
@@ -29,19 +30,21 @@ export default function Dashboard() {
 
   useEffect(() => {
     const getProfile = async () => {
-      const studentId = localStorage.getItem("studentId");
+      const studentId = localStorage.getItem("studentId") || localStorage.getItem("userId");
       if (!studentId || studentId === "null") {
         setLoading(false);
         return;
       }
 
       try {
-        const [data, opps] = await Promise.all([
+        const [data, opps, prepResponse] = await Promise.all([
           fetchStudentProfile(studentId),
-          fetchStudentOpportunities()
+          fetchStudentOpportunities(),
+          fetchPrepResources()
         ]);
         setProfile(data);
         setOpportunities(opps);
+        setDashboardPrep(Array.isArray(prepResponse.data) ? prepResponse.data.slice(0, 3) : []);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         showToast("Couldn't refresh dashboard data.", "error");
@@ -55,7 +58,6 @@ export default function Dashboard() {
 
   const completionPercentage = calculateProfileCompletion(profile);
   const readinessResult = calculateReadinessScore(profile, completionPercentage);
-  const dashboardPrep = getDashboardRecommendedResources(profile, 3);
 
   return (
     <div className="animate-in fade-in duration-700">
@@ -144,11 +146,12 @@ export default function Dashboard() {
                     <OpportunityCard 
                       key={job._id || job.id} 
                       {...job} 
-                      eligible={evalResult.isEligible}
-                      criteria={job.eligibilityCriteria}
+                      dynamicStatus={evalResult.status}
+                      requiredSkills={job.requiredSkills}
+                      matchedCount={evalResult.skillMatchCount}
                       totalCount={evalResult.totalSkills}
                       missingSkills={evalResult.missingSkills}
-                      readinessScore={evalResult.skillMatchCount ? Math.round((evalResult.skillMatchCount / evalResult.totalSkills) * 100) : 0}
+                      readinessScore={evalResult.readinessScore}
                     />
                   );
                 })}
