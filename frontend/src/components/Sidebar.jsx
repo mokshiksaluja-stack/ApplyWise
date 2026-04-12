@@ -6,6 +6,7 @@ const navItems = [
   { path: '/admin/dashboard', icon: Home, label: 'Dashboard' },
   { path: '/admin/opportunities', icon: Briefcase, label: 'Opportunities' },
   { path: '/admin/applications', icon: FileText, label: 'Applications' },
+  { path: '/admin/coordinator-monitor', icon: BarChart2, label: 'Coordinator Monitor' },
   { path: '/tasks', icon: CheckSquare, label: 'Tasks' },
   { path: '/interviews', icon: Calendar, label: 'Interviews' },
   { path: '/coordinators', icon: Users, label: 'Coordinators' },

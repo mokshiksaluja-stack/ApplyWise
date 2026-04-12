@@ -2,24 +2,97 @@ import axios from 'axios';
 
 const API = axios.create({ baseURL: 'http://localhost:5001/api' });
 
-// Intercept requests to attach token
+// Attach JWT token to every request
 API.interceptors.request.use((req) => {
   const token = localStorage.getItem('token');
-  if (token) {
-    req.headers.Authorization = `Bearer ${token}`;
-  }
+  if (token) req.headers.Authorization = `Bearer ${token}`;
   return req;
 });
 
-export const loginAPI = (formData) => API.post('/auth/login', formData);
-export const signupAPI = (formData) => API.post('/auth/signup', formData);
+// Response Interceptor for Global Error Handling
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const { response } = error;
 
-export const fetchOpportunities = () => API.get('/jobs');
-export const fetchOpportunityById = (id) => API.get(`/jobs/${id}`);
-export const createOpportunityApi = (data) => API.post('/jobs', data);
+    if (!response) {
+      // Network Error / Backend unreachable
+      window.dispatchEvent(new CustomEvent('api-error', { 
+        detail: { message: 'Server unreachable. Please check your connection.', type: 'error' } 
+      }));
+    } else {
+      switch (response.status) {
+        case 401:
+          // Unauthorized - Clear session and redirect
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
+          break;
+        case 403:
+          window.dispatchEvent(new CustomEvent('api-error', { 
+            detail: { message: 'Access denied. You do not have permission for this action.', type: 'warning' } 
+          }));
+          break;
+        case 500:
+          window.dispatchEvent(new CustomEvent('api-error', { 
+            detail: { message: 'Internal server error. Please try again later.', type: 'error' } 
+          }));
+          break;
+        default:
+          // Local components can still catch and handle specific errors
+          break;
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+// ── Auth ──────────────────────────────────────────────────────────────────
+export const loginAPI  = (data) => API.post('/auth/login', data);
+export const signupAPI = (data) => API.post('/auth/signup', data);
+
+// ── Jobs / Opportunities ──────────────────────────────────────────────────
+export const fetchOpportunities    = ()       => API.get('/jobs');
+export const fetchOpportunityById  = (id)     => API.get(`/jobs/${id}`);
+export const createOpportunityApi  = (data)   => API.post('/jobs', data);
+export const updateOpportunityApi  = (id, data) => API.put(`/jobs/${id}`, data);
+export const deleteOpportunityApi  = (id)     => API.delete(`/jobs/${id}`);
+export const assignCoordinatorApi  = (id, coordinatorId) =>
+  API.put(`/jobs/${id}/assign-coordinator`, { coordinatorId });
+
+// ── Applications ──────────────────────────────────────────────────────────
+export const fetchApplications     = ()       => API.get('/applications');
+export const fetchApplicationById  = (id)     => API.get(`/applications/${id}`);
+export const createApplicationApi  = (data)   => API.post('/applications', data);
+export const updateApplicationApi  = (id, data) => API.put(`/applications/${id}`, data);
+
+// Granular coordinator action endpoints
+export const updateAppStatusApi    = (id, payload) => API.put(`/applications/${id}/status`, payload);
+export const scheduleInterviewApi  = (id, payload) => API.put(`/applications/${id}/schedule`, payload);
+export const markAttendanceApi     = (id, attendance) => API.put(`/applications/${id}/attendance`, { attendance });
+
+// ── Students ──────────────────────────────────────────────────────────────
 export const fetchStudents = () => API.get('/students');
-export const fetchApplications = () => API.get('/applications');
+
+// ── Interviews ────────────────────────────────────────────────────────────
 export const fetchInterviews = () => API.get('/interviews');
-export const createApplicationApi = (data) => API.post('/applications', data);
+
+// ── Notifications ─────────────────────────────────────────────────────────
+export const fetchNotificationsApi  = (receiverId) =>
+  API.get('/notifications', { params: { receiverId } });
+export const createNotificationApi  = (payload) => API.post('/notifications', payload);
+export const markNotifReadApi       = (id)       => API.put(`/notifications/${id}/read`);
+
+// ── Analytics ─────────────────────────────────────────────────────────────
+export const fetchDashboardAnalytics = (filters = {}) =>
+  API.get('/analytics/dashboard', { params: filters });
+
+// ── Prep Center ──────────────────────────────────────────────────────────
+export const fetchPrepResources = (params) => API.get('/prep', { params });
+
+// ── Coordinator Monitoring ───────────────────────────────────────────────
+export const fetchCoordinatorMonitoring = () => API.get('/coordinator/monitor');
 
 export default API;

@@ -15,13 +15,13 @@ exports.signup = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const userRole = role === 'admin' ? 'admin' : 'student';
+    const userRole = ['admin', 'coordinator'].includes(role) ? role : 'student';
     const user = new User({ email, password: hashedPassword, role: userRole });
     await user.save();
 
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'supersecret_fallback_key', { expiresIn: '1d' });
 
-    res.status(201).json({ user: { id: user._id, email: user.email, role: user.role }, token });
+    res.status(201).json({ success: true, user: { id: user._id, email: user.email, role: user.role }, token });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -46,7 +46,7 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'supersecret_fallback_key', { expiresIn: '1d' });
 
-    res.json({ user: { id: user._id, email: user.email, role: user.role }, token });
+    res.json({ success: true, user: { id: user._id, email: user.email, role: user.role }, token });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }

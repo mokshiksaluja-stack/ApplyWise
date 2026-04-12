@@ -6,11 +6,15 @@ import NotificationCard from "../../components/dashboard/NotificationCard";
 import ApplicationCard from "../../components/dashboard/ApplicationCard";
 import ReadinessCard from "../../components/dashboard/ReadinessCard";
 
+import Skeleton from "../../components/UI/Skeleton";
+import EmptyState from "../../components/UI/EmptyState";
+import { useToast } from "../../context/ToastContext";
+
 import { fetchStudentProfile } from "../../services/studentService";
 import { calculateProfileCompletion, calculateReadinessScore } from "../../utils/studentMetrics";
 import { evaluateEligibility } from "../../utils/eligibilityEngine";
 import { getDashboardRecommendedResources } from "../../utils/recommendationEngine";
-import { BookOpen, ExternalLink, FileText } from "lucide-react";
+import { BookOpen, ExternalLink, FileText, Sparkles, Inbox, Briefcase } from "lucide-react";
 import ResourceModal from "../../components/dashboard/ResourceModal";
 
 import { opportunitiesList as opportunities } from "../../data/dummyOpportunities";
@@ -21,6 +25,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedResource, setSelectedResource] = useState(null);
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   useEffect(() => {
     const getProfile = async () => {
@@ -35,162 +40,179 @@ export default function Dashboard() {
         setProfile(data);
       } catch (error) {
         console.error("Error fetching profile for dash:", error);
+        showToast("Couldn't refresh your profile data.", "error");
       } finally {
         setLoading(false);
       }
     };
     
     getProfile();
-  }, []);
+  }, [showToast]);
 
   const completionPercentage = calculateProfileCompletion(profile);
   const readinessResult = calculateReadinessScore(profile, completionPercentage);
   const dashboardPrep = getDashboardRecommendedResources(profile, 3);
 
   return (
-    <>
+    <div className="animate-in fade-in duration-700">
           {loading ? (
-            <div className="mb-8 flex items-center space-x-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <div className="h-12 w-12 animate-pulse rounded-full bg-gray-200"></div>
-              <div className="space-y-2">
-                <div className="h-4 w-32 animate-pulse rounded bg-gray-200"></div>
-                <div className="h-3 w-48 animate-pulse rounded bg-gray-200"></div>
+            <div className="mb-8 p-8 rounded-[32px] border border-gray-100 bg-white shadow-sm flex flex-col md:flex-row gap-6 items-center">
+              <Skeleton className="w-20 h-20 shrink-0" variant="circle" />
+              <div className="flex-1 space-y-3 w-full">
+                <Skeleton className="h-8 w-1/3" />
+                <Skeleton className="h-4 w-1/2" />
               </div>
             </div>
           ) : profile ? (
-            <div className="mb-8 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white shadow-sm">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="mb-8 rounded-[32px] bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 p-8 text-white shadow-xl shadow-blue-600/20 premium-card">
+                <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <h2 className="text-3xl font-bold">Welcome back, {profile.fullName}! 👋</h2>
-                      <p className="mt-2 font-medium text-blue-100 opacity-90">
-                        {profile.primaryDomain} Specialist • CGPA: {profile.cgpa}
+                      <h2 className="text-3xl font-black tracking-tight">Welcome back, {profile.fullName}! 👋</h2>
+                      <p className="mt-2 text-sm font-bold text-blue-100 opacity-80 uppercase tracking-widest flex items-center gap-2">
+                         <Sparkles size={14} className="text-amber-300" /> {profile.primaryDomain} Specialist
                       </p>
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-2">
                       {profile.technicalSkills?.slice(0, 4).map((skill) => (
-                          <span key={skill} className="rounded-full bg-white/20 px-3 py-1.5 text-xs font-semibold backdrop-blur-sm">
+                          <span key={skill} className="rounded-xl bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider backdrop-blur-md border border-white/10">
                               {skill}
                           </span>
                       ))}
-                      {profile.technicalSkills?.length > 4 && (
-                          <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold">
-                              +{profile.technicalSkills.length - 4} more
-                          </span>
-                      )}
                     </div>
                 </div>
             </div>
           ) : (
-            <div className="mb-8 flex flex-col items-center justify-between rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900 md:flex-row">
+            <div className="mb-8 flex flex-col items-center justify-between rounded-3xl border border-amber-200 bg-amber-50/50 p-6 text-amber-900 md:flex-row backdrop-blur-sm">
                 <div>
-                  <h3 className="text-lg font-bold">Complete Your Profile</h3>
-                  <p className="mt-1 text-sm opacity-90">Set up your profile to activate your readiness score and receive personalized opportunities.</p>
+                  <h3 className="text-base font-black">Finalize Your Profile</h3>
+                  <p className="mt-1 text-sm font-medium opacity-80">Connect your skills and academic data to unlock intelligent job matchmaking.</p>
                 </div>
-                <a href="/profile/edit" className="mt-4 rounded-xl bg-amber-200 px-5 py-2.5 text-sm font-semibold text-amber-900 transition hover:bg-amber-300 md:mt-0">
-                  Go to Wizard
-                </a>
+                <Link to="/profile/edit" className="mt-4 rounded-xl bg-amber-200 px-6 py-2.5 text-xs font-black uppercase tracking-widest text-amber-900 transition hover:bg-amber-300 active:scale-95 md:mt-0 shadow-sm">
+                  Start Wizard
+                </Link>
             </div>
           )}
 
           <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
                     <ProfileStatCard title="Profile Completion" percentage={completionPercentage} />
-
                     <ReadinessCard score={readinessResult.score} />
-
                     <ApplicationCard total={4} active={3} />
-        </section>
+          </section>
 
+          <section className="mt-12">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                 <Briefcase className="text-blue-600" size={24} /> Opportunities for You
+              </h2>
+              <Link to="/student/opportunities" className="text-xs font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition">
+                Explore all
+              </Link>
+            </div>
 
-          <section className="mt-10">
-  <div className="mb-4 flex items-center justify-between">
-    <h2 className="text-2xl font-semibold text-gray-900">
-      Recommended Opportunities
-    </h2>
-    <Link to="/student/opportunities" className="text-sm font-medium text-blue-600 hover:text-blue-700">
-      View all
-    </Link>
-  </div>
+            {loading ? (
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+                {[1, 2, 3].map(i => <Skeleton key={i} className="h-[320px]" />)}
+              </div>
+            ) : opportunities.length > 0 ? (
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {opportunities.slice(0, 3).map((item) => {
+                  const evalResult = evaluateEligibility(profile, item);
+                  return (
+                    <OpportunityCard 
+                      key={item.id || item.company} 
+                      {...item} 
+                      dynamicStatus={evalResult.status}
+                      matchedCount={evalResult.skillMatchCount}
+                      totalCount={evalResult.totalSkills}
+                      missingSkills={evalResult.missingSkills}
+                      onViewDetails={() => navigate(`/student/opportunities/${item.id || '#'}`)}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyState 
+                icon={Briefcase} 
+                title="No active drives matching your profile" 
+                message="Wait for coordinators to post new opportunities or update your skill preferences."
+              />
+            )}
+          </section>
 
-  <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-    {opportunities.slice(0, 3).map((item) => {
-      const evalResult = evaluateEligibility(profile, item);
+          <section className="mt-12">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                 <BookOpen className="text-indigo-600" size={24} /> Learning Path
+              </h2>
+              <Link to="/student/prep-center" className="text-xs font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800 transition">
+                Library
+              </Link>
+            </div>
 
-      return (
-        <OpportunityCard 
-          key={item.company} 
-          {...item} 
-          dynamicStatus={evalResult.status}
-          matchedCount={evalResult.skillMatchCount}
-          totalCount={evalResult.totalSkills}
-          missingSkills={evalResult.missingSkills}
-          onViewDetails={() => navigate("/opportunities")}
-        />
-      );
-    })}
-  </div>
-</section>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+              {loading ? (
+                [1, 2, 3].map(i => <Skeleton key={i} className="h-[180px]" />)
+              ) : dashboardPrep.length > 0 ? dashboardPrep.map((res) => (
+                <div key={res.id} className="flex flex-col rounded-3xl border border-gray-100 bg-white p-6 shadow-sm premium-card hover:bg-indigo-50/10 active:scale-[0.98]">
+                    <div className="mb-4 flex items-start justify-between">
+                      <span className="rounded-lg border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-[10px] font-black text-indigo-700 uppercase tracking-widest">
+                        {res.topic}
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-bold text-gray-900 leading-tight mb-2">{res.title}</h3>
+                    <p className="flex-grow text-[11px] text-gray-500 line-clamp-2 leading-relaxed font-medium">{res.description}</p>
+                    
+                    <div className="mt-6 flex items-center justify-between border-t border-gray-50 pt-4">
+                      <div className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          <FileText size={12} /> {res.resourceType}
+                      </div>
+                      <button onClick={() => setSelectedResource(res)} className="px-4 py-1.5 rounded-lg bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition shadow-sm">
+                          Prepare
+                      </button>
+                    </div>
+                </div>
+              )) : (
+                <div className="col-span-3">
+                   <EmptyState 
+                    icon={BookOpen} 
+                    title="Path Pending" 
+                    message="Add some skills to your profile to get personalized preparation resources."
+                  />
+                </div>
+              )}
+            </div>
+          </section>
 
-<section className="mt-10">
-  <div className="mb-4 flex items-center justify-between">
-    <h2 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-       Recommended Prep
-    </h2>
-    <Link to="/student/prep-center" className="text-sm font-medium text-blue-600 hover:text-blue-700">
-      View all
-    </Link>
-  </div>
+          <section className="mt-12">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                 <Inbox className="text-slate-600" size={24} /> Feed
+              </h2>
+              <Link to="/notifications" className="text-xs font-black uppercase tracking-widest text-slate-600 hover:text-slate-800 transition">
+                See all
+              </Link>
+            </div>
 
-  <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-    {dashboardPrep.length > 0 ? dashboardPrep.map((res) => (
-       <div key={res.id} className="flex flex-col rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-          <div className="mb-3 flex items-start justify-between">
-             <span className="rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 uppercase tracking-wider">
-               {res.topic}
-             </span>
-          </div>
-          <h3 className="text-base font-bold text-gray-900 leading-snug">{res.title}</h3>
-          <p className="mt-2 flex-grow text-xs text-gray-500 line-clamp-2 leading-relaxed">{res.description}</p>
-          
-          <div className="mt-4 flex items-center justify-between border-t border-gray-50 pt-4">
-             <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase">
-                <FileText size={12} /> {res.resourceType}
-             </div>
-             <button onClick={() => setSelectedResource(res)} className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 transition">
-                Open <ExternalLink size={12} />
-             </button>
-          </div>
-       </div>
-    )) : (
-       <div className="col-span-3 rounded-2xl border border-dashed border-gray-200 bg-gray-50 py-10 flex flex-col items-center justify-center text-center">
-          <BookOpen size={24} className="text-gray-300 mb-2"/>
-          <p className="text-sm font-medium text-gray-500">No specific prep resources recommended yet.</p>
-       </div>
-    )}
-  </div>
-</section>
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+              {loading ? (
+                [1, 2, 3].map(i => <Skeleton key={i} className="h-[100px]" />)
+              ) : notifications.length > 0 ? (
+                notifications.slice(0, 3).map((item) => (
+                  <NotificationCard key={item.id || item.title} {...item} />
+                ))
+              ) : (
+                <div className="col-span-3">
+                  <EmptyState icon={Inbox} title="Inbox Zero" message="You're all caught up with your notifications." />
+                </div>
+              )}
+            </div>
+          </section>
 
-<section className="mt-10">
-  <div className="mb-4 flex items-center justify-between">
-    <h2 className="text-2xl font-semibold text-gray-900">
-      Recent Notifications
-    </h2>
-    <Link to="/notifications" className="text-sm font-medium text-blue-600 hover:text-blue-700">
-      View all
-    </Link>
-  </div>
-
-  <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-    {notifications.slice(0, 3).map((item) => (
-      <NotificationCard key={item.title} {...item} />
-    ))}
-  </div>
-</section>
-
-<ResourceModal 
-  resource={selectedResource} 
-  onClose={() => setSelectedResource(null)} 
-/>
-    </>
+          <ResourceModal 
+            resource={selectedResource} 
+            onClose={() => setSelectedResource(null)} 
+          />
+    </div>
   );
 }

@@ -10,6 +10,10 @@ const interviewSchema = new mongoose.Schema({
   date: { type: String },
   time: { type: String },
   mode: { type: String },
+  venue: { type: String },
+  slotId: { type: String },
+  reportingTime: { type: String },
+  assignedStudents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   status: { type: String, default: 'Upcoming' }
 }, { timestamps: true });
 

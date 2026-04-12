@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { DashboardController } from '../../controllers/dashboardController';
 import { fetchStudentProfile } from '../../services/studentService';
 import { evaluateEligibility } from '../../utils/eligibilityEngine';
+import Skeleton from '../../components/UI/Skeleton';
+import { useToast } from '../../context/ToastContext';
 import {
   ArrowLeft, Building2, MapPin, IndianRupee, Clock, CheckCircle, 
   AlertTriangle, XCircle, Briefcase, FileText, Code2, FolderOpen, Lightbulb, Users, Calendar, Lock,
-  TrendingUp, Target, FileEdit, Info
+  TrendingUp, Target, FileEdit, Info, Share2
 } from 'lucide-react';
 
 export default function StudentOpportunityDetail() {
@@ -16,6 +18,8 @@ export default function StudentOpportunityDetail() {
   const [profile, setProfile] = useState(null);
   const [evaluation, setEvaluation] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isApplying, setIsApplying] = useState(false);
+  const { showToast } = useToast();
 
   // Set default tab to "My Readiness" to prioritize applicant context
   const [activeTab, setActiveTab] = useState('analysis');
@@ -38,27 +42,39 @@ export default function StudentOpportunityDetail() {
         }
       } catch (err) {
         console.error("Error fetching detail data", err);
+        showToast("Error loading opportunity details.", "error");
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [id]);
+  }, [id, showToast]);
 
   const handleApply = async () => {
-    const success = await DashboardController.applyToJob(id);
-    if (success) {
-      setJob({ ...job, applied: true });
-      alert('Application submitted successfully!');
+    setIsApplying(true);
+    try {
+      const success = await DashboardController.applyToJob(id);
+      if (success) {
+        setJob({ ...job, applied: true });
+        showToast(`Successfully applied to ${job.company}! Check your email for updates.`, "success");
+      } else {
+        showToast("Application failed. Please try again or contact support.", "error");
+      }
+    } catch (error) {
+      showToast("Network error while submitting application.", "error");
+    } finally {
+      setIsApplying(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
-          <p className="text-gray-500 font-medium animate-pulse">Running applicant intelligence...</p>
+      <div className="max-w-6xl mx-auto pb-20 animate-in fade-in duration-500">
+        <div className="mb-6 h-4 w-32 bg-gray-100 rounded animate-pulse"></div>
+        <Skeleton className="h-64 mb-8" />
+        <div className="flex flex-col lg:flex-row gap-8">
+          <Skeleton className="w-64 h-64 shrink-0" />
+          <Skeleton className="flex-1 h-[600px]" />
         </div>
       </div>
     );
@@ -66,32 +82,40 @@ export default function StudentOpportunityDetail() {
 
   if (!job) {
     return (
-      <div className="text-center py-20">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Opportunity Not Found</h2>
-        <button onClick={() => navigate('/student/opportunities')} className="text-blue-600 hover:underline">Return to Opportunities</button>
+      <div className="text-center py-32 animate-in zoom-in-95">
+        <div className="mb-6 inline-flex p-6 bg-rose-50 rounded-full border border-rose-100">
+           <XCircle className="text-rose-500" size={40} />
+        </div>
+        <h2 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">Opportunity Expired</h2>
+        <p className="text-gray-500 font-bold mb-8 uppercase tracking-widest text-xs">This data has been archived or doesn't exist.</p>
+        <button onClick={() => navigate('/student/opportunities')} className="bg-gray-900 text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-xl shadow-gray-900/10">Return to Grid</button>
       </div>
     );
   }
 
-  const evalStatus = evaluation?.status || "Not Eligible";
-  const eligibilityReasons = evaluation?.reasons || ["Complete your profile to see eligibility."];
-  const missingSkills = evaluation?.missingSkills || [];
-  const matchedSkills = evaluation?.matchedSkills || [];
-  
+  const evalStatus        = evaluation?.status          || "Not Eligible";
+  const readinessScore    = evaluation?.readinessScore   ?? 0;
+  const missingSkills     = evaluation?.missingSkills    || [];
+  const matchedSkills     = evaluation?.matchedSkills    || [];
+  const matchedPreferred  = evaluation?.matchedPreferred || [];
+  const scoreBreakdown    = evaluation?.scoreBreakdown   || {};
+  const explanationWhy    = evaluation?.explanation?.why     || ["Complete your profile to see eligibility."];
+  const explanationImprove = evaluation?.explanation?.improve || [];
+
   const estimatedPrepWeeks = missingSkills.length > 0 ? Math.ceil(missingSkills.length * 1.5) : 0;
-  
+
   let statusBadgeStyle = "bg-green-100 text-green-800 border-green-200";
-  let StatusBadgeIcon = CheckCircle;
-  let summaryMessage = "You meet the core requirements for this role. Prepare well and apply confidently.";
-  
+  let StatusBadgeIcon  = CheckCircle;
+  let summaryMessage   = "You meet the core requirements for this role. Prepare well and apply confidently.";
+
   if (evalStatus === "Partially Ready") {
     statusBadgeStyle = "bg-yellow-100 text-yellow-800 border-yellow-200";
-    StatusBadgeIcon = AlertTriangle;
-    summaryMessage = "You are eligible, but you have some skill gaps. See your action plan below.";
+    StatusBadgeIcon  = AlertTriangle;
+    summaryMessage   = "You are eligible, but you have some skill gaps. See your action plan below.";
   } else if (evalStatus === "Not Eligible") {
     statusBadgeStyle = "bg-red-50 text-red-700 border-red-100";
-    StatusBadgeIcon = XCircle;
-    summaryMessage = "You currently do not meet the academic or skill criteria for this opportunity.";
+    StatusBadgeIcon  = XCircle;
+    summaryMessage   = "You currently do not meet the academic or skill criteria for this opportunity.";
   }
 
   const tabs = [
@@ -192,87 +216,116 @@ export default function StudentOpportunityDetail() {
            {/* TAB 1: READINESS ANALYSIS */}
            {activeTab === 'analysis' && (
              <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
-               
-               {/* Reassuring Summary */}
-               <div className={`p-5 rounded-2xl border flex items-start gap-4 shadow-sm ${statusBadgeStyle} bg-opacity-50`}>
-                 <div className="mt-0.5"><StatusBadgeIcon size={24}/></div>
-                 <div>
-                    <h3 className="text-base font-bold mb-1">Eligibility Status: {evalStatus}</h3>
-                    <p className="text-sm font-medium opacity-90">{summaryMessage}</p>
+
+               {/* Status + Readiness Score */}
+               <div className={`p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-sm ${statusBadgeStyle}`}>
+                 <div className="flex items-center gap-3 flex-1">
+                   <StatusBadgeIcon size={28} className="shrink-0" />
+                   <div>
+                     <h3 className="text-base font-bold mb-0.5">Eligibility: {evalStatus}</h3>
+                     <p className="text-sm font-medium opacity-90">{summaryMessage}</p>
+                   </div>
+                 </div>
+                 {/* Readiness Score Ring */}
+                 <div className="flex flex-col items-center bg-white/70 rounded-2xl px-5 py-3 border border-white/80 shadow-sm shrink-0">
+                   <span className="text-3xl font-black text-gray-900">{readinessScore}</span>
+                   <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mt-0.5">Readiness</span>
                  </div>
                </div>
 
-               {/* Why this matches me */}
-               <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                 <h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2"><CheckCircle className="text-green-500"/> Why this opportunity matches you</h2>
-                 
-                 <div className="space-y-4">
-                   <div className="flex gap-3">
-                     <div className="w-1.5 bg-green-400 rounded-full shrink-0"></div>
-                     <div>
-                       <p className="text-sm font-bold text-gray-900">Academic Fit</p>
-                       <p className="text-sm text-gray-600 mt-1">
-                          You meet the essential criteria: {job.minCGPA ? `CGPA requirement of ${job.minCGPA}` : 'No strict CGPA cutoff'} and course branch requirements.
-                       </p>
-                     </div>
-                   </div>
-
-                   {matchedSkills.length > 0 && (
-                     <div className="flex gap-3">
-                       <div className="w-1.5 bg-green-400 rounded-full shrink-0"></div>
-                       <div>
-                         <p className="text-sm font-bold text-gray-900">Strong Skill Alignment</p>
-                         <p className="text-sm text-gray-600 mt-1">Your experience aligns well with their requirements.</p>
-                         <div className="flex flex-wrap gap-1.5 mt-2.5">
-                            {matchedSkills.map(s => <span key={s} className="bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-lg text-xs font-bold">{s}</span>)}
+               {/* Score Breakdown */}
+               {evaluation && (
+                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                   <h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2"><TrendingUp className="text-blue-500" size={18}/> Score Breakdown</h2>
+                   <div className="space-y-3">
+                     {[
+                       { label: 'Skill Match',     value: scoreBreakdown.skillMatch,     color: 'bg-blue-500',    weight: '40%' },
+                       { label: 'Academic (CGPA)', value: scoreBreakdown.cgpa,           color: 'bg-indigo-500',  weight: '25%' },
+                       { label: 'Project Depth',   value: scoreBreakdown.projects,       color: 'bg-purple-500',  weight: '20%' },
+                       { label: 'Certifications',  value: scoreBreakdown.certifications, color: 'bg-emerald-500', weight: '10%' },
+                       { label: 'Preferred Skills',value: scoreBreakdown.preferred,      color: 'bg-amber-500',   weight: '5%' },
+                     ].map(({ label, value, color, weight }) => (
+                       <div key={label}>
+                         <div className="flex justify-between text-xs font-semibold text-gray-600 mb-1">
+                           <span>{label} <span className="text-gray-400">({weight})</span></span>
+                           <span className="font-bold text-gray-800">{value ?? 0}/100</span>
+                         </div>
+                         <div className="w-full bg-gray-100 rounded-full h-2">
+                           <div className={`${color} h-2 rounded-full transition-all duration-500`} style={{ width: `${value ?? 0}%` }} />
                          </div>
                        </div>
-                     </div>
-                   )}
+                     ))}
+                   </div>
                  </div>
+               )}
+
+               {/* Why Eligible / Not Eligible */}
+               <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                 <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><CheckCircle className="text-green-500"/> Eligibility Breakdown</h2>
+                 <ul className="space-y-2">
+                   {explanationWhy.map((reason, i) => (
+                     <li key={i} className="text-sm text-gray-700 bg-gray-50 rounded-xl px-4 py-2.5 border border-gray-100 font-medium">{reason}</li>
+                   ))}
+                 </ul>
+                 {matchedPreferred.length > 0 && (
+                   <div className="mt-4">
+                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">⭐ Preferred Skills You Have</p>
+                     <div className="flex flex-wrap gap-1.5">
+                       {matchedPreferred.map(s => <span key={s} className="bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-lg text-xs font-bold">{s}</span>)}
+                     </div>
+                   </div>
+                 )}
                </div>
 
-               {/* What is missing */}
+               {/* Skill Gap */}
                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
                  <div className="absolute top-0 right-0 p-6 opacity-5"><Target size={100}/></div>
-                 <h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2 relative z-10"><Target className="text-red-500"/> What is missing in your profile</h2>
-                 
-                 {evalStatus === 'Not Eligible' ? (
-                   <div className="bg-red-50 p-4 rounded-xl border border-red-100 inline-block mb-4">
-                     <p className="text-sm font-semibold text-red-800">Critical Blockers:</p>
-                     <ul className="mt-2 space-y-1">
-                       {eligibilityReasons.map((r, i) => <li key={i} className="text-sm text-red-700 flex gap-2"><XCircle size={16} className="shrink-0 mt-0.5"/> {r}</li>)}
-                     </ul>
-                   </div>
-                 ) : (
-                   <p className="text-sm text-gray-600 mb-4 relative z-10">You have no critical academic blockers. Below are the skill gaps identified based on the job description.</p>
-                 )}
+                 <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2 relative z-10"><Target className="text-red-500"/> Skill Gap Analysis</h2>
 
-                 {missingSkills.length > 0 ? (
-                   <div className="relative z-10">
-                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Capabilities to Acquire</p>
-                     <div className="flex flex-wrap gap-2">
-                        {missingSkills.map(s => <span key={s} className="bg-white text-gray-700 border border-gray-200 shadow-sm px-3 py-1.5 rounded-xl text-sm font-semibold">{s}</span>)}
+                 {matchedSkills.length > 0 && (
+                   <div className="mb-4">
+                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">✅ Matched Required Skills ({matchedSkills.length})</p>
+                     <div className="flex flex-wrap gap-1.5">
+                       {matchedSkills.map(s => <span key={s} className="bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-lg text-xs font-bold">{s}</span>)}
                      </div>
                    </div>
-                 ) : (
-                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 relative z-10 flex items-center gap-3">
-                      <CheckCircle className="text-green-500 shrink-0"/>
-                      <p className="text-sm font-semibold text-gray-700">Incredible! You have no identifiable skill gaps for this specific role.</p>
+                 )}
+
+                  {missingSkills.length > 0 ? (
+                    <div className="relative z-10">
+                      <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">❌ Missing Critical Skills ({missingSkills.length})</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {missingSkills.map(s => (
+                          <div key={s} className="flex items-center justify-between bg-white text-gray-700 border border-gray-100 shadow-sm p-3 rounded-2xl group hover:border-blue-200 transition-all">
+                             <span className="text-sm font-bold">{s}</span>
+                             <Link 
+                               to={`/student/prep-center?search=${encodeURIComponent(s)}`}
+                               className="text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg border border-blue-100 opacity-0 group-hover:opacity-100 transition-all hover:bg-blue-600 hover:text-white"
+                             >
+                               Start Practice
+                             </Link>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center gap-3">
+                     <CheckCircle className="text-green-500 shrink-0"/>
+                     <p className="text-sm font-semibold text-gray-700">No skill gaps identified. You are fully matched!</p>
                    </div>
                  )}
                </div>
 
-               {/* Estimated Time */}
+               {/* Prep time estimate */}
                {missingSkills.length > 0 && (
                  <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-2xl border border-blue-100 flex items-center justify-between">
-                    <div>
-                      <h3 className="text-base font-bold text-indigo-900 mb-1">Estimated Preparation Time</h3>
-                      <p className="text-sm text-indigo-700/80">Based on your {missingSkills.length} missing skill(s).</p>
-                    </div>
-                    <div className="text-right bg-white px-5 py-3 rounded-2xl shadow-sm border border-indigo-50">
-                       <p className="text-2xl font-black text-blue-600 leading-none">~ {estimatedPrepWeeks} weeks</p>
-                    </div>
+                   <div>
+                     <h3 className="text-base font-bold text-indigo-900 mb-1">Estimated Preparation Time</h3>
+                     <p className="text-sm text-indigo-700/80">Based on {missingSkills.length} missing skill(s).</p>
+                   </div>
+                   <div className="text-right bg-white px-5 py-3 rounded-2xl shadow-sm border border-indigo-50">
+                     <p className="text-2xl font-black text-blue-600 leading-none">~ {estimatedPrepWeeks} weeks</p>
+                   </div>
                  </div>
                )}
 
@@ -286,15 +339,41 @@ export default function StudentOpportunityDetail() {
                {/* What to improve right now */}
                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                  <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><TrendingUp className="text-blue-500"/> What to improve before applying</h2>
-                 {missingSkills.length > 0 ? (
-                   <ol className="list-decimal list-inside space-y-2 text-sm font-medium text-gray-700 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                     <li>Review the basics of <span className="font-bold text-blue-700">{missingSkills[0]}</span>.</li>
-                     {missingSkills.length > 1 && <li>Build a small continuous integration project utilizing <span className="font-bold text-blue-700">{missingSkills[1]}</span>.</li>}
-                     <li>Read the official documentation for the identified missing tools.</li>
-                   </ol>
-                 ) : (
-                   <p className="text-sm text-gray-600 bg-gray-50 p-4 rounded-xl border border-gray-100">You are highly matched! Focus on practicing standard interview patterns instead of trying to learn new skills.</p>
-                 )}
+                 {explanationImprove.length > 0 ? (
+                    <ul className="space-y-2">
+                      {explanationImprove.map((tip, i) => (
+                        <li key={i} className="flex gap-4 text-[13px] font-bold text-gray-700 bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
+                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-[10px] font-black text-white shadow-sm shadow-blue-600/20">
+                            {i + 1}
+                          </div> 
+                          {tip}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-gray-600 bg-gray-50 p-4 rounded-xl border border-gray-100 italic">You are highly matched! Use the links below to refine your company-specific knowledge.</p>
+                  )}
+
+                  {/* Company specific prep link */}
+                  <div className="mt-8 pt-8 border-t border-gray-100">
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl text-white shadow-xl">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10">
+                           <Building2 className="text-blue-400" size={24}/>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-black tracking-tight">{job.company} Prep Hub</h4>
+                          <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest">Alumni insights & OA archives</p>
+                        </div>
+                      </div>
+                      <Link 
+                        to={`/student/prep-center?company=${encodeURIComponent(job.company)}`}
+                        className="px-6 py-2.5 bg-blue-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white hover:text-blue-600 transition-all shadow-lg shadow-blue-600/20"
+                      >
+                        Visit Hub
+                      </Link>
+                    </div>
+                  </div>
                </div>
 
                {/* Resume Suggestions */}

@@ -1,6 +1,7 @@
 const Application = require('../models/Application');
 const Student = require('../models/Student');
 const Job = require('../models/Job');
+const CoordinatorService = require('../services/coordinatorService');
 
 exports.getApplications = async (req, res) => {
   try {
@@ -62,6 +63,92 @@ exports.deleteApplication = async (req, res) => {
     const application = await Application.findByIdAndDelete(req.params.id);
     if (!application) return res.status(404).json({ message: "Application not found" });
     res.json({ message: "Application deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// ── Coordinator Actions ────────────────────────────────────────────────────
+
+exports.updateStatus = async (req, res) => {
+  try {
+    const { status, roundResult, currentRound } = req.body;
+    const app = await Application.findByIdAndUpdate(
+      req.params.id,
+      { $set: { status, ...(roundResult && { roundResult }), ...(currentRound && { currentRound }) } },
+      { new: true }
+    );
+    if (!app) return res.status(404).json({ message: "Application not found" });
+
+    // Track Coordinator Activity
+    if (req.user && req.user.role === 'coordinator') {
+      await CoordinatorService.logActivity({
+        coordinatorId: req.user.id,
+        actionType: 'Status Update',
+        entityId: app._id,
+        entityModel: 'Application',
+        details: `Updated status to ${status}${currentRound ? ` (Round: ${currentRound})` : ''}`
+      });
+    }
+
+    res.json({ success: true, application: app });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+exports.scheduleInterview = async (req, res) => {
+  try {
+    const { interviewDate, reportingTime, roomNumber, venue } = req.body;
+    const app = await Application.findByIdAndUpdate(
+      req.params.id,
+      { $set: { status: 'Interview Scheduled', interviewDate, reportingTime, roomNumber: roomNumber || venue } },
+      { new: true }
+    );
+    if (!app) return res.status(404).json({ message: "Application not found" });
+
+    // Track Coordinator Activity
+    if (req.user && req.user.role === 'coordinator') {
+      await CoordinatorService.logActivity({
+        coordinatorId: req.user.id,
+        actionType: 'Schedule Interview',
+        entityId: app._id,
+        entityModel: 'Application',
+        details: `Scheduled interview on ${interviewDate} at ${venue || roomNumber}`
+      });
+    }
+
+    res.json({ success: true, application: app });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+exports.markAttendance = async (req, res) => {
+  try {
+    const { attendance } = req.body;
+    if (!['Present', 'Absent', 'Pending'].includes(attendance)) {
+      return res.status(400).json({ message: "Invalid attendance value" });
+    }
+    const app = await Application.findByIdAndUpdate(
+      req.params.id,
+      { $set: { attendance } },
+      { new: true }
+    );
+    if (!app) return res.status(404).json({ message: "Application not found" });
+
+    // Track Coordinator Activity
+    if (req.user && req.user.role === 'coordinator') {
+      await CoordinatorService.logActivity({
+        coordinatorId: req.user.id,
+        actionType: 'Attendance Update',
+        entityId: app._id,
+        entityModel: 'Application',
+        details: `Marked attendance as ${attendance}`
+      });
+    }
+
+    res.json({ success: true, application: app });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

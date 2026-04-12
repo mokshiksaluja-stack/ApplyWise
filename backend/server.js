@@ -11,6 +11,10 @@ const studentRoutes = require('./routes/studentRoutes');
 const jobRoutes = require('./routes/jobRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const interviewRoutes = require('./routes/interviewRoutes');
+const coordinatorRoutes = require('./routes/coordinatorRoutes');
+const prepRoutes = require('./routes/prepRoutes');
+const notificationRoutes   = require('./routes/notificationRoutes');
+const analyticsRoutes      = require('./routes/analyticsRoutes');
 
 const app = express();
 
@@ -29,6 +33,10 @@ if(studentRoutes) app.use('/api/students', studentRoutes);
 if(jobRoutes) app.use('/api/jobs', jobRoutes);
 if(applicationRoutes) app.use('/api/applications', applicationRoutes);
 if(interviewRoutes) app.use('/api/interviews', interviewRoutes);
+if(coordinatorRoutes) app.use('/api/coordinator', coordinatorRoutes);
+if(notificationRoutes) app.use('/api/notifications', notificationRoutes);
+if(analyticsRoutes)    app.use('/api/analytics',     analyticsRoutes);
+if(prepRoutes) app.use('/api/prep', prepRoutes);
 
 app.get('/', (req, res) => {
     res.json({ message: "Placement Dashboard API Backend Running with MongoDB!" });

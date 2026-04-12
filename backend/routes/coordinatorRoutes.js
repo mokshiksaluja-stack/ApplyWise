@@ -1,0 +1,21 @@
+const express = require('express');
+const router = express.Router();
+const coordinatorController = require('../controllers/coordinatorController');
+
+// Opportunities
+router.get('/jobs/:coordinatorId', coordinatorController.getAssignedDrives);
+
+// Applications
+router.put('/applications/:id', coordinatorController.updateApplicationStatus);
+
+// Scheduler
+router.post('/scheduler/slots', coordinatorController.createInterviewSlot);
+router.post('/scheduler/slots/:slotId/assign', coordinatorController.assignStudentToSlot);
+
+// Monitoring (Admin Only)
+router.get('/monitor', coordinatorController.getMonitoringSummary);
+
+// Activity
+router.post('/activity', coordinatorController.logActivity);
+
+module.exports = router;

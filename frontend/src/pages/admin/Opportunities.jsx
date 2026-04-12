@@ -2,26 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import OpportunityCard from '../../components/OpportunityCard';
-import { DashboardController } from '../../controllers/dashboardController';
-import { Search, Filter, Plus } from 'lucide-react';
+import { Search, Filter, Plus, UserPlus } from 'lucide-react';
+import { useAdminCoordinatorContext } from '../../context/AdminCoordinatorContext';
 
 const Opportunities = () => {
-  const [jobs, setJobs] = useState([]);
+  const { sharedOpportunities, coordinators, assignDrive, unassignDrive } = useAdminCoordinatorContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const navigate = useNavigate();
 
-  const fetchJobs = () => {
-    DashboardController.getOpportunities().then(setJobs);
-  };
-
-  useEffect(() => {
-    fetchJobs();
-  }, []);
-
   const roles = ['All', 'Frontend', 'Backend', 'Data Analyst'];
 
-  const filteredJobs = jobs.filter(job => {
+  const filteredJobs = sharedOpportunities.filter(job => {
     const matchesSearch = job.company?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           job.role?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = activeFilter === 'All' || job.type === activeFilter;
@@ -81,7 +73,33 @@ const Opportunities = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredJobs.map(job => (
-            <OpportunityCard key={job._id || job.id} {...job} />
+            <div key={job.id} className="relative group">
+              <OpportunityCard {...job} />
+              <div className="absolute top-2 right-12 z-10 bg-white/90 shadow-sm border border-gray-200 rounded-lg backdrop-blur-sm p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-2">
+                   <UserPlus className="w-4 h-4 text-gray-500" />
+                   <select 
+                     className="text-xs font-semibold bg-transparent border-none outline-none text-gray-700 w-24 cursor-pointer"
+                     value={job.assignedCoordinatorId || ''}
+                     onChange={(e) => {
+                        const val = e.target.value;
+                        if(val === '') unassignDrive(job.id);
+                        else assignDrive(job.id, parseInt(val));
+                     }}
+                   >
+                     <option value="">Unassigned</option>
+                     {coordinators.map(c => (
+                       <option key={c.id} value={c.id}>{c.name}</option>
+                     ))}
+                   </select>
+                </div>
+              </div>
+              {job.assignedCoordinatorId && (
+                <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-bold shadow-sm whitespace-nowrap border border-indigo-200">
+                  Assigned to {coordinators.find(c => c.id === job.assignedCoordinatorId)?.name}
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}

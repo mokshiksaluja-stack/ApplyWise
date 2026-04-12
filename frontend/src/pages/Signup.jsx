@@ -19,7 +19,9 @@ export default function Signup() {
           localStorage.setItem('studentId', data.user.id);
       }
       
+      localStorage.setItem('userRole', role);
       if (role === 'admin') navigate('/admin/dashboard');
+      else if (role === 'coordinator') navigate('/coordinator/dashboard');
       else navigate('/student/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Signup failed');
@@ -45,7 +47,8 @@ export default function Signup() {
             <div>
               <select name="role" value={role} onChange={e => setRole(e.target.value)} className="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm">
                  <option value="student">Student</option>
-                 <option value="admin">Admin / Coordinator</option>
+                 <option value="coordinator">Placement Coordinator</option>
+                 <option value="admin">Admin</option>
               </select>
             </div>
           </div>

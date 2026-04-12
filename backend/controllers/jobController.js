@@ -1,4 +1,5 @@
 const Job = require('../models/Job');
+const CoordinatorService = require('../services/coordinatorService');
 
 exports.getJobs = async (req, res) => {
   try {
@@ -50,6 +51,23 @@ exports.deleteJob = async (req, res) => {
     const job = await Job.findByIdAndDelete(req.params.id);
     if (!job) return res.status(404).json({ message: "Job not found" });
     res.json({ message: "Job deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// ── Admin → Coordinator Assignment ────────────────────────────────────────
+
+exports.assignCoordinator = async (req, res) => {
+  try {
+    const { coordinatorId } = req.body; // null = unassign
+    const job = await Job.findByIdAndUpdate(
+      req.params.id,
+      { $set: { assignedCoordinatorId: coordinatorId || null } },
+      { new: true }
+    );
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    res.json({ success: true, job });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

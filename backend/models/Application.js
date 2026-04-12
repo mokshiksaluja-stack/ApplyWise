@@ -8,6 +8,9 @@ const applicationSchema = new mongoose.Schema({
   role: { type: String },
   logo: { type: String },
   status: { type: String, default: 'Applied' },
+  attendance: { type: String, enum: ['Present', 'Absent', 'Pending'], default: 'Pending' },
+  currentRound: { type: String, default: 'Initial' },
+  roundResult: { type: String, default: 'Pending' },
   date: { type: String }
 }, { timestamps: true });
 

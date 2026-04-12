@@ -8,4 +8,7 @@ router.post('/', jobController.createJob);
 router.put('/:id', jobController.updateJob);
 router.delete('/:id', jobController.deleteJob);
 
+// Admin → Coordinator assignment
+router.put('/:id/assign-coordinator', jobController.assignCoordinator);
+
 module.exports = router;

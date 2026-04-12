@@ -73,7 +73,7 @@ const jobSchema = new mongoose.Schema({
   experienceLinks: [{ type: String }],
 
   // 9. Coordination / Logistics
-  coordinatorAssigned: { type: String },
+  assignedCoordinatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   hrMobileNumber: { type: String },
   venue: { type: String },
   reportingInstructions: { type: String },
