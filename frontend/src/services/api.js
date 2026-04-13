@@ -104,5 +104,7 @@ export const fetchCoordinatorMonitoring = () => API.get('/coordinator/monitor');
 export const fetchCoordinatorList = () => API.get('/coordinator/list');
 export const fetchCoordinatorTasksApi = (coordinatorId) => API.get(`/coordinator/tasks/${coordinatorId}`);
 export const fetchAllCoordinatorTasksApi = () => API.get('/coordinator/tasks/all');
+export const createTaskApi = (taskData) => API.post('/coordinator/tasks', taskData);
+export const updateTaskStatusApi = (taskId, status) => API.patch(`/coordinator/tasks/${taskId}/status`, { status });
 
 export default API;

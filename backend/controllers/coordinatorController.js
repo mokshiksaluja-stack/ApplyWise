@@ -61,10 +61,43 @@ const getCoordinatorTasks = async (req, res) => {
 // Get ALL pending tasks (for Admin Dashboard)
 const getAllPendingTasks = async (req, res) => {
   try {
-    const tasks = await CoordinatorTask.find({ status: 'Pending' })
+    const tasks = await CoordinatorTask.find()
       .populate('coordinatorId', 'email name')
-      .sort({ deadline: 1 });
+      .sort({ createdAt: -1 });
     res.status(200).json(tasks);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Create a new task and assign to a coordinator (Admin action)
+const createTask = async (req, res) => {
+  try {
+    const { coordinatorId, title, description, deadline, priority } = req.body;
+    if (!coordinatorId || !title) {
+      return res.status(400).json({ error: 'coordinatorId and title are required' });
+    }
+    const task = new CoordinatorTask({ coordinatorId, title, description, deadline, priority: priority || 'Medium' });
+    await task.save();
+    const populated = await task.populate('coordinatorId', 'email name');
+    console.log(`[Flow] Task Created: "${title}" assigned to coordinator ${coordinatorId}`);
+    res.status(201).json(populated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Update task status (coordinator marks complete)
+const updateTaskStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const task = await CoordinatorTask.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    res.json(task);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -215,6 +248,8 @@ module.exports = {
   getAssignedDrives,
   getCoordinatorTasks,
   getAllPendingTasks,
+  createTask,
+  updateTaskStatus,
   updateApplicationStatus,
   createInterviewSlot,
   assignStudentToSlot,

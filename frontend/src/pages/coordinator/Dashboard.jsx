@@ -11,23 +11,27 @@ import clsx from 'clsx';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { currentCoordinatorId, sharedOpportunities, coordinators, logCoordinatorActivity } = useAdminCoordinatorContext();
+  const { sharedOpportunities, coordinators, logCoordinatorActivity } = useAdminCoordinatorContext();
   const { addNotification } = useNotifications();
   const { showToast } = useToast();
   
+  // Read directly from localStorage — same pattern as Applicants/AssignedOpportunities
+  const coordinatorId = localStorage.getItem('userId');
+
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = React.useState([]);
   const [assignedDrives, setAssignedDrives] = useState([]);
 
   useEffect(() => {
     const loadData = async () => {
+      if (!coordinatorId) { setLoading(false); return; }
       try {
         const [drivesRes, tasksRes] = await Promise.all([
-           fetchCoordinatorOpportunities(currentCoordinatorId),
-           fetchCoordinatorTasksApi(currentCoordinatorId)
+           fetchCoordinatorOpportunities(coordinatorId),
+           fetchCoordinatorTasksApi(coordinatorId)
         ]);
-        setAssignedDrives(drivesRes.data);
-        setTasks(tasksRes.data);
+        setAssignedDrives(Array.isArray(drivesRes.data) ? drivesRes.data : []);
+        setTasks(Array.isArray(tasksRes.data) ? tasksRes.data : []);
       } catch (err) {
         console.error("Failed to load coordinator dashboard data", err);
       } finally {
@@ -35,7 +39,8 @@ export default function Dashboard() {
       }
     };
     loadData();
-  }, [currentCoordinatorId]);
+  }, [coordinatorId]);
+
 
   const assignedDrivesCount = assignedDrives.length;
   const myTracker = coordinators.find(c => c.id === currentCoordinatorId);

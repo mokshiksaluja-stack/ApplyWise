@@ -7,8 +7,12 @@ router.get('/list', coordinatorController.listCoordinators);
 
 // Opportunities
 router.get('/jobs/:coordinatorId', coordinatorController.getAssignedDrives);
+
+// Tasks
 router.get('/tasks/all', coordinatorController.getAllPendingTasks);
 router.get('/tasks/:coordinatorId', coordinatorController.getCoordinatorTasks);
+router.post('/tasks', coordinatorController.createTask);
+router.patch('/tasks/:id/status', coordinatorController.updateTaskStatus);
 
 // Applications
 router.put('/applications/:id', coordinatorController.updateApplicationStatus);
