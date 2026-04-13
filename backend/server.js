@@ -22,7 +22,7 @@ const app = express();
 // Allow all origins for seamless local development (Vite can run on 5174, 5175 etc)
 app.use(cors({
   origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
