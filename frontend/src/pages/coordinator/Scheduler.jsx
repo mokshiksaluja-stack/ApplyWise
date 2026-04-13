@@ -32,13 +32,18 @@ const resolveCompany = (app) => {
 };
 
 export default function Scheduler() {
-  const { currentCoordinatorId } = useAdminCoordinatorContext();
+  const { } = useAdminCoordinatorContext();
   const { addNotification } = useNotifications();
   const { showToast } = useToast();
+
+  // Read directly from localStorage — consistent with Applicants/AssignedOpportunities
+  const coordinatorId = localStorage.getItem('userId');
 
   const [allApplications, setAllApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeSlotMenu, setActiveSlotMenu] = useState(null);
+  const [showNewSlotModal, setShowNewSlotModal] = useState(false);
+  const [newSlotForm, setNewSlotForm] = useState({ time: '', venue: '', period: 'Morning' });
   const [scheduleDate, setScheduleDate] = useState(() => {
     const d = new Date();
     return d.toISOString().split('T')[0];
@@ -56,7 +61,7 @@ export default function Scheduler() {
   useEffect(() => {
     const load = async () => {
       try {
-        const { data } = await fetchCoordinatorApplicationsApi(currentCoordinatorId);
+        const { data } = await fetchCoordinatorApplicationsApi(coordinatorId);
         setAllApplications(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Failed to load coordinator applications for scheduler', err);
@@ -64,8 +69,9 @@ export default function Scheduler() {
         setLoading(false);
       }
     };
-    if (currentCoordinatorId) load();
-  }, [currentCoordinatorId]);
+    if (coordinatorId) load();
+    else setLoading(false);
+  }, [coordinatorId]);
 
   // Derive: unscheduled = no interviewDate yet, or status not "Interview Scheduled"
   const unassignedList = useMemo(() => {
@@ -180,6 +186,27 @@ export default function Scheduler() {
   };
 
   const allowDrop = (e) => e.preventDefault();
+
+  // ── New Slot Handler ───────────────────────────────────────────────────
+  const handleAddNewSlot = () => {
+    const { time, venue, period } = newSlotForm;
+    if (!time.trim() || !venue.trim()) {
+      showToast('Please enter both time and venue.', 'error');
+      return;
+    }
+    const newSlot = {
+      id: `slot_${Date.now()}`,
+      time: time.trim(),
+      period,
+      venue: venue.trim(),
+      status: 'Pending',
+      students: [],
+    };
+    setSlots(prev => [...prev, newSlot]);
+    setShowNewSlotModal(false);
+    setNewSlotForm({ time: '', venue: '', period: 'Morning' });
+    showToast(`New slot added — ${time} at ${venue}`, 'success');
+  };
 
   const removeStudentFromSlot = (slotId, studentId) => {
     const slot = slots.find(s => s.id === slotId);
@@ -296,6 +323,7 @@ export default function Scheduler() {
   );
 
   return (
+    <>
     <div className="h-[calc(100vh-8rem)] flex flex-col animate-in fade-in duration-700 overflow-hidden">
 
       {/* Top Config Header */}
@@ -318,7 +346,10 @@ export default function Scheduler() {
             onChange={(e) => setScheduleDate(e.target.value)}
             className="px-5 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-xl text-xs font-black uppercase tracking-widest text-gray-700 focus:outline-none shadow-inner transition-all"
           />
-          <button className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 border-2 border-gray-900 hover:bg-blue-600 hover:border-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-gray-900/10 transition-all flex-1 md:flex-none active:scale-95">
+          <button
+            onClick={() => setShowNewSlotModal(true)}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 border-2 border-gray-900 hover:bg-blue-600 hover:border-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-gray-900/10 transition-all flex-1 md:flex-none active:scale-95"
+          >
             <Plus className="w-4 h-4" /> New Slot
           </button>
         </div>
@@ -409,5 +440,89 @@ export default function Scheduler() {
 
       </div>
     </div>
+
+    {/* ── New Slot Modal ─────────────────────────────────────────────── */}
+    {showNewSlotModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
+        <div className="w-full max-w-md bg-white rounded-[28px] shadow-2xl overflow-hidden">
+          <div className="flex items-center justify-between p-6 border-b border-gray-100">
+            <div>
+              <h2 className="text-lg font-black text-gray-900 tracking-tight">Add Interview Slot</h2>
+              <p className="text-xs text-gray-400 font-bold mt-0.5 uppercase tracking-wider">Define a new time segment for {scheduleDate}</p>
+            </div>
+            <button
+              onClick={() => setShowNewSlotModal(false)}
+              className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-all"
+            >
+              <XCircle className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="p-6 space-y-5">
+            {/* Time */}
+            <div>
+              <label className="block text-xs font-black text-gray-600 uppercase tracking-wider mb-2">Time Slot <span className="text-red-500">*</span></label>
+              <input
+                type="time"
+                value={newSlotForm.time}
+                onChange={e => setNewSlotForm(p => ({ ...p, time: e.target.value }))}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+              />
+              <p className="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-wider">e.g. 09:30 → displays as 09:30 AM</p>
+            </div>
+
+            {/* Venue */}
+            <div>
+              <label className="block text-xs font-black text-gray-600 uppercase tracking-wider mb-2">Venue <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={newSlotForm.venue}
+                onChange={e => setNewSlotForm(p => ({ ...p, venue: e.target.value }))}
+                placeholder="e.g. Conference Room A, Lab 3..."
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+              />
+            </div>
+
+            {/* Session Period */}
+            <div>
+              <label className="block text-xs font-black text-gray-600 uppercase tracking-wider mb-2">Session</label>
+              <div className="flex gap-3">
+                {['Morning', 'Afternoon'].map(p => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setNewSlotForm(prev => ({ ...prev, period: p }))}
+                    className={clsx(
+                      'flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2',
+                      newSlotForm.period === p
+                        ? 'bg-gray-900 text-white border-gray-900'
+                        : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                    )}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 p-6 border-t border-gray-100">
+            <button
+              onClick={() => setShowNewSlotModal(false)}
+              className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 text-sm font-black uppercase tracking-wider hover:bg-gray-200 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddNewSlot}
+              className="flex-1 py-3 rounded-xl bg-gray-900 hover:bg-blue-600 text-white text-sm font-black uppercase tracking-wider transition-all shadow-lg"
+            >
+              Add Slot
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </>
   );
 }
