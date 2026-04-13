@@ -27,4 +27,10 @@ router.get('/monitor', coordinatorController.getMonitoringSummary);
 // Activity
 router.post('/activity', coordinatorController.logActivity);
 
+// Performance (Admin Only) — stored in coordinatorperformance collection
+router.get('/performance', coordinatorController.getAllPerformance);
+router.get('/performance/:coordinatorId', coordinatorController.getPerformance);
+router.post('/performance/:coordinatorId/attendance', coordinatorController.markAttendance);
+router.patch('/performance/:coordinatorId/badge', coordinatorController.assignBadge);
+
 module.exports = router;

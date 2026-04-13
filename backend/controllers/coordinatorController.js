@@ -3,11 +3,12 @@ const Application = require('../models/Application');
 const Interview = require('../models/Interview');
 const CoordinatorActivityLog = require('../models/CoordinatorActivityLog');
 const CoordinatorProfile = require('../models/CoordinatorProfile');
+const CoordinatorPerformance = require('../models/CoordinatorPerformance');
 const User = require('../models/User');
 
 // ── Configuration ──────────────────────────────────────────────────────────
-const LOW_PERFORMANCE_THRESHOLD = 5; // Total actions in 7 days
-const TOP_PERFORMANCE_THRESHOLD = 20; // Total actions in 7 days
+const LOW_PERFORMANCE_THRESHOLD = 5;
+const TOP_PERFORMANCE_THRESHOLD = 20;
 const ACTIVITY_WINDOW_DAYS = 7;
 const CoordinatorTask = require('../models/CoordinatorTask');
 
@@ -243,6 +244,89 @@ const getMonitoringSummary = async (req, res) => {
   }
 };
 
+// ── Coordinator Performance ─────────────────────────────────────────────────
+
+// GET /performance/:coordinatorId — fetch or create a performance record
+const getPerformance = async (req, res) => {
+  try {
+    const { coordinatorId } = req.params;
+    let record = await CoordinatorPerformance.findOne({ coordinatorId });
+    if (!record) {
+      record = await CoordinatorPerformance.create({ coordinatorId });
+    }
+    res.json(record);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// GET /performance — fetch all performance records (for monitor page)
+const getAllPerformance = async (req, res) => {
+  try {
+    const records = await CoordinatorPerformance.find()
+      .populate('coordinatorId', 'email name');
+    res.json(records);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// POST /performance/:coordinatorId/attendance — mark attendance for a date
+const markAttendance = async (req, res) => {
+  try {
+    const { coordinatorId } = req.params;
+    const { date, present, note } = req.body;
+    if (!date) return res.status(400).json({ error: 'date is required (YYYY-MM-DD)' });
+
+    let record = await CoordinatorPerformance.findOne({ coordinatorId });
+    if (!record) record = new CoordinatorPerformance({ coordinatorId });
+
+    // Remove existing entry for same date (upsert by date)
+    const prevEntry = record.attendance.find(a => a.date === date);
+    const wasPresentBefore = prevEntry ? prevEntry.present : null;
+    record.attendance = record.attendance.filter(a => a.date !== date);
+    record.attendance.push({ date, present: !!present, note: note || '' });
+
+    // Recompute totals from scratch
+    record.totalPresent = record.attendance.filter(a => a.present).length;
+    record.totalAbsent  = record.attendance.filter(a => !a.present).length;
+
+    await record.save();
+    console.log(`[Attendance] Coordinator ${coordinatorId} marked ${present ? 'Present' : 'Absent'} on ${date}`);
+    res.json(record);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// PATCH /performance/:coordinatorId/badge — assign badge and increment score
+const assignBadge = async (req, res) => {
+  try {
+    const { coordinatorId } = req.params;
+    const { badge, adminNote } = req.body;
+    const VALID = ['Excellent', 'Good', 'Needs Attention', ''];
+    if (!VALID.includes(badge)) {
+      return res.status(400).json({ error: `badge must be one of: ${VALID.filter(Boolean).join(', ')}` });
+    }
+
+    let record = await CoordinatorPerformance.findOne({ coordinatorId });
+    if (!record) record = new CoordinatorPerformance({ coordinatorId });
+
+    // Points map — only increase on badge assignment
+    const POINTS = { Excellent: 10, Good: 5, 'Needs Attention': 0 };
+    const earned = POINTS[badge] ?? 0;
+    record.score += earned;   // score only ever increases
+    record.badge = badge;
+    if (adminNote !== undefined) record.adminNote = adminNote;
+
+    await record.save();
+    console.log(`[Badge] Coordinator ${coordinatorId} → badge: ${badge}, +${earned} pts, total: ${record.score}`);
+    res.json(record);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   listCoordinators,
   getAssignedDrives,
@@ -254,5 +338,10 @@ module.exports = {
   createInterviewSlot,
   assignStudentToSlot,
   logActivity,
-  getMonitoringSummary
+  getMonitoringSummary,
+  // Performance
+  getPerformance,
+  getAllPerformance,
+  markAttendance,
+  assignBadge,
 };

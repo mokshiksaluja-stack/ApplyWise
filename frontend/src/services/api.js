@@ -107,4 +107,12 @@ export const fetchAllCoordinatorTasksApi = () => API.get('/coordinator/tasks/all
 export const createTaskApi = (taskData) => API.post('/coordinator/tasks', taskData);
 export const updateTaskStatusApi = (taskId, status) => API.patch(`/coordinator/tasks/${taskId}/status`, { status });
 
+// Performance APIs (Admin only) — stored in coordinatorperformance collection
+export const fetchAllPerformanceApi = () => API.get('/coordinator/performance');
+export const fetchPerformanceApi = (coordinatorId) => API.get(`/coordinator/performance/${coordinatorId}`);
+export const markCoordinatorAttendanceApi = (coordinatorId, date, present, note = '') =>
+  API.post(`/coordinator/performance/${coordinatorId}/attendance`, { date, present, note });
+export const assignCoordinatorBadgeApi = (coordinatorId, badge, adminNote = '') =>
+  API.patch(`/coordinator/performance/${coordinatorId}/badge`, { badge, adminNote });
+
 export default API;
