@@ -32,6 +32,7 @@ import CoordinatorApplicants from './pages/coordinator/Applicants';
 import CoordinatorScheduler from './pages/coordinator/Scheduler';
 import CoordinatorNotifications from './pages/coordinator/Notifications';
 import CoordinatorReports from './pages/coordinator/Reports';
+import CoordinatorDriveDetail from './pages/coordinator/DriveDetail';
 
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -88,6 +89,7 @@ function App() {
                 >
                   <Route path="/coordinator/dashboard"      element={<CoordinatorDashboard />} />
                   <Route path="/coordinator/opportunities"  element={<CoordinatorOpportunities />} />
+                  <Route path="/coordinator/opportunities/:id" element={<CoordinatorDriveDetail />} />
                   <Route path="/coordinator/applicants"     element={<CoordinatorApplicants />} />
                   <Route path="/coordinator/scheduler"      element={<CoordinatorScheduler />} />
                   <Route path="/coordinator/notifications"  element={<CoordinatorNotifications />} />
