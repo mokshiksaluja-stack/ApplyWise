@@ -8,11 +8,11 @@ router.get('/list', coordinatorController.listCoordinators);
 // Opportunities
 router.get('/jobs/:coordinatorId', coordinatorController.getAssignedDrives);
 
-// Tasks
+// Tasks — /all MUST be registered before /:coordinatorId (specific before param routes)
 router.get('/tasks/all', coordinatorController.getAllPendingTasks);
-router.get('/tasks/:coordinatorId', coordinatorController.getCoordinatorTasks);
 router.post('/tasks', coordinatorController.createTask);
 router.patch('/tasks/:id/status', coordinatorController.updateTaskStatus);
+router.get('/tasks/:coordinatorId', coordinatorController.getCoordinatorTasks);
 
 // Applications
 router.put('/applications/:id', coordinatorController.updateApplicationStatus);

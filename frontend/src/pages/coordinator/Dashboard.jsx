@@ -43,7 +43,7 @@ export default function Dashboard() {
 
 
   const assignedDrivesCount = assignedDrives.length;
-  const myTracker = coordinators.find(c => c.id === currentCoordinatorId);
+  const myTracker = coordinators.find(c => c.id === coordinatorId);
 
   const dynamicStats = [
     { title: 'Drives Managed', value: assignedDrivesCount, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', trend: '+12%' },
@@ -55,7 +55,7 @@ export default function Dashboard() {
   const handleTaskComplete = (e, taskId) => {
     e.stopPropagation();
     setTasks(prev => prev.filter(t => t.id !== taskId));
-    logCoordinatorActivity(currentCoordinatorId, 'TASK_COMPLETED');
+    logCoordinatorActivity(coordinatorId, 'TASK_COMPLETED');
     showToast("Task archived and logged to Admin", "success");
     addNotification({ title: 'Task Completed', message: 'Activity logged with Admin.', type: 'success' });
   };
