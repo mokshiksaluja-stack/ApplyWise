@@ -6,10 +6,16 @@ import { Search, Filter, Plus, UserPlus } from 'lucide-react';
 import { useAdminCoordinatorContext } from '../../context/AdminCoordinatorContext';
 
 const Opportunities = () => {
-  const { sharedOpportunities, coordinators, assignDrive, unassignDrive } = useAdminCoordinatorContext();
+  const { sharedOpportunities, coordinators, assignDrive, unassignDrive, refreshOpportunities } = useAdminCoordinatorContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const navigate = useNavigate();
+
+  // Re-fetch from DB every time this page mounts (e.g., after creating a new job)
+  useEffect(() => {
+    if (refreshOpportunities) refreshOpportunities();
+  }, []);
+
 
   const roles = ['All', 'Frontend', 'Backend', 'Data Analyst'];
 

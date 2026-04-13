@@ -11,30 +11,30 @@ export function AdminCoordinatorProvider({ children }) {
   const [opportunities, setOpportunities] = useState([]);
   const [coordinators, setCoordinators] = useState([]);
 
-  useEffect(() => {
-    const loadRealData = async () => {
-      try {
-        const [oppRes, coordRes] = await Promise.all([
-           fetchOpportunities(),
-           fetchCoordinatorList()   // reads from users collection directly — always has coordinators
-        ]);
-        
-        setOpportunities(oppRes.data.map(opp => ({
-          ...opp,
-          id: opp._id,
-          type: opp.opportunityType || 'Full-time'
-        })));
-        
-        // coordRes.data is already mapped by backend: [{ id, name, email }]
-        if (Array.isArray(coordRes.data)) {
-          setCoordinators(coordRes.data);
-        }
-      } catch (err) {
-        console.error("Failed to load data for context", err);
+  const loadRealData = useCallback(async () => {
+    try {
+      const [oppRes, coordRes] = await Promise.all([
+         fetchOpportunities(),
+         fetchCoordinatorList()
+      ]);
+      
+      setOpportunities(oppRes.data.map(opp => ({
+        ...opp,
+        id: opp._id,
+        type: opp.opportunityType || 'Full-time'
+      })));
+      
+      if (Array.isArray(coordRes.data)) {
+        setCoordinators(coordRes.data);
       }
-    };
-    loadRealData();
+    } catch (err) {
+      console.error("Failed to load data for context", err);
+    }
   }, []);
+
+  useEffect(() => {
+    loadRealData();
+  }, [loadRealData]);
 
   // ── assignDrive ──────────────────────────────────────────────────────────
   const assignDrive = useCallback(async (opportunityId, coordinatorId) => {
@@ -94,6 +94,7 @@ export function AdminCoordinatorProvider({ children }) {
         reassignDrive,
         unassignDrive,
         logCoordinatorActivity,
+        refreshOpportunities: loadRealData,
       }}
     >
       {children}
