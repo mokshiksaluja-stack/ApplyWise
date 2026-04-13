@@ -173,12 +173,10 @@ export default function ProfileWizard() {
         }
       }
       
-      if (!formData.databaseFamiliarity) newErrors.databaseFamiliarity = "Database familiarity is required";
-      if (!formData.backendFamiliarity) newErrors.backendFamiliarity = "Backend familiarity is required";
-      if (!formData.communicationLevel) newErrors.communicationLevel = "Communication level is required";
-      if (!formData.problemSolvingLevel) newErrors.problemSolvingLevel = "Problem solving level is required";
       if (!formData.codingPlatform) newErrors.codingPlatform = "Coding platform is required";
       if (!formData.dsaLevel) newErrors.dsaLevel = "DSA comfort level is required";
+      // Note: databaseFamiliarity, backendFamiliarity, communicationLevel, problemSolvingLevel
+      // are intentionally not required here as stored values may use free-text not matching dropdown options
     }
 
     if (step === 4) {
