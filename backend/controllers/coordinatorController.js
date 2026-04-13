@@ -249,13 +249,19 @@ const getMonitoringSummary = async (req, res) => {
 // GET /performance/:coordinatorId — fetch or create a performance record
 const getPerformance = async (req, res) => {
   try {
+    const mongoose = require('mongoose');
     const { coordinatorId } = req.params;
-    let record = await CoordinatorPerformance.findOne({ coordinatorId });
-    if (!record) {
-      record = await CoordinatorPerformance.create({ coordinatorId });
+    if (!mongoose.Types.ObjectId.isValid(coordinatorId)) {
+      return res.status(400).json({ error: `Invalid coordinatorId: "${coordinatorId}"` });
     }
+    const record = await CoordinatorPerformance.findOneAndUpdate(
+      { coordinatorId },
+      { $setOnInsert: { totalPresent: 0, totalAbsent: 0, attendance: [], badge: '', score: 0 } },
+      { upsert: true, new: true }
+    );
     res.json(record);
   } catch (err) {
+    console.error('[getPerformance ERROR]', err.message);
     res.status(500).json({ error: err.message });
   }
 };
@@ -274,55 +280,80 @@ const getAllPerformance = async (req, res) => {
 // POST /performance/:coordinatorId/attendance — mark attendance for a date
 const markAttendance = async (req, res) => {
   try {
+    const mongoose = require('mongoose');
     const { coordinatorId } = req.params;
     const { date, present, note } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(coordinatorId)) {
+      return res.status(400).json({ error: `Invalid coordinatorId: "${coordinatorId}" is not a valid ObjectId` });
+    }
     if (!date) return res.status(400).json({ error: 'date is required (YYYY-MM-DD)' });
 
-    let record = await CoordinatorPerformance.findOne({ coordinatorId });
-    if (!record) record = new CoordinatorPerformance({ coordinatorId });
+    // Ensure record exists first (upsert)
+    await CoordinatorPerformance.findOneAndUpdate(
+      { coordinatorId },
+      { $setOnInsert: { totalPresent: 0, totalAbsent: 0, attendance: [], badge: '', score: 0 } },
+      { upsert: true, new: true }
+    );
 
-    // Remove existing entry for same date (upsert by date)
-    const prevEntry = record.attendance.find(a => a.date === date);
-    const wasPresentBefore = prevEntry ? prevEntry.present : null;
-    record.attendance = record.attendance.filter(a => a.date !== date);
+    // Then update attendance (pull old entry for same date + push new one)
+    const record = await CoordinatorPerformance.findOneAndUpdate(
+      { coordinatorId },
+      { $pull: { attendance: { date } } },
+      { new: true }
+    );
+
     record.attendance.push({ date, present: !!present, note: note || '' });
-
-    // Recompute totals from scratch
     record.totalPresent = record.attendance.filter(a => a.present).length;
     record.totalAbsent  = record.attendance.filter(a => !a.present).length;
-
     await record.save();
-    console.log(`[Attendance] Coordinator ${coordinatorId} marked ${present ? 'Present' : 'Absent'} on ${date}`);
+
+    console.log(`[Attendance] Coordinator ${coordinatorId} => ${present ? 'Present' : 'Absent'} on ${date}`);
     res.json(record);
   } catch (err) {
+    console.error('[markAttendance ERROR]', err.message);
     res.status(500).json({ error: err.message });
   }
 };
 
+
 // PATCH /performance/:coordinatorId/badge — assign badge and increment score
 const assignBadge = async (req, res) => {
   try {
+    const mongoose = require('mongoose');
     const { coordinatorId } = req.params;
     const { badge, adminNote } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(coordinatorId)) {
+      return res.status(400).json({ error: `Invalid coordinatorId: "${coordinatorId}" is not a valid ObjectId` });
+    }
     const VALID = ['Excellent', 'Good', 'Needs Attention', ''];
     if (!VALID.includes(badge)) {
       return res.status(400).json({ error: `badge must be one of: ${VALID.filter(Boolean).join(', ')}` });
     }
 
-    let record = await CoordinatorPerformance.findOne({ coordinatorId });
-    if (!record) record = new CoordinatorPerformance({ coordinatorId });
-
     // Points map — only increase on badge assignment
     const POINTS = { Excellent: 10, Good: 5, 'Needs Attention': 0 };
     const earned = POINTS[badge] ?? 0;
-    record.score += earned;   // score only ever increases
-    record.badge = badge;
-    if (adminNote !== undefined) record.adminNote = adminNote;
 
-    await record.save();
-    console.log(`[Badge] Coordinator ${coordinatorId} → badge: ${badge}, +${earned} pts, total: ${record.score}`);
+    // Use findOneAndUpdate with upsert to avoid E11000 duplicate key race conditions
+    const updateFields = { badge };
+    if (adminNote !== undefined) updateFields.adminNote = adminNote;
+
+    const record = await CoordinatorPerformance.findOneAndUpdate(
+      { coordinatorId },
+      {
+        $inc: { score: earned },
+        $set: updateFields,
+        $setOnInsert: { totalPresent: 0, totalAbsent: 0, attendance: [] }
+      },
+      { upsert: true, new: true }
+    );
+
+    console.log(`[Badge] Coordinator ${coordinatorId} => badge: ${badge}, +${earned} pts, total: ${record.score}`);
     res.json(record);
   } catch (err) {
+    console.error('[assignBadge ERROR]', err.message);
     res.status(500).json({ error: err.message });
   }
 };
