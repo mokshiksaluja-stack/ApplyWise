@@ -15,6 +15,7 @@ const coordinatorRoutes = require('./routes/coordinatorRoutes');
 const prepRoutes = require('./routes/prepRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const aiRoutes        = require('./routes/aiRoutes');
 
 const app = express();
 
@@ -40,6 +41,7 @@ if (coordinatorRoutes) app.use('/api/coordinator', coordinatorRoutes);
 if (notificationRoutes) app.use('/api/notifications', notificationRoutes);
 if (analyticsRoutes) app.use('/api/analytics', analyticsRoutes);
 if (prepRoutes) app.use('/api/prep', prepRoutes);
+if (aiRoutes) app.use('/api/ai', aiRoutes);
 
 // [DEBUG] TEMPORARY route to verify database connection and collections
 app.get('/api/debug/db-status', async (req, res) => {

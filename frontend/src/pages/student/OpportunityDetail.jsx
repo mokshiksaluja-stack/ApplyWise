@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import AIInsightsPanel from '../../components/student/AIInsightsPanel';
+
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { DashboardController } from '../../controllers/dashboardController';
 import { fetchStudentProfile } from '../../services/studentService';
@@ -130,8 +132,10 @@ export default function StudentOpportunityDetail() {
     { id: 'action', label: 'Action Plan' },
     { id: 'process', label: 'Selection Process' },
     { id: 'overview', label: 'Role & Warnings' },
-    { id: 'logistics', label: 'Logistics' }
+    { id: 'logistics', label: 'Logistics' },
+    { id: 'ai', label: '✨ AI Insights' }
   ];
+
 
   return (
     <div className="max-w-6xl mx-auto pb-20">
@@ -631,6 +635,13 @@ export default function StudentOpportunityDetail() {
                     </div>
                  </div>
                </div>
+             </div>
+           )}
+
+           {/* TAB 6: AI INSIGHTS */}
+           {activeTab === 'ai' && (
+             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+               <AIInsightsPanel job={job} profile={profile} evaluation={evaluation} />
              </div>
            )}
 

@@ -115,4 +115,8 @@ export const markCoordinatorAttendanceApi = (coordinatorId, date, present, note 
 export const assignCoordinatorBadgeApi = (coordinatorId, badge, adminNote = '') =>
   API.patch(`/coordinator/performance/${coordinatorId}/badge`, { badge, adminNote });
 
+// ── AI Insights ───────────────────────────────────────────────────────────
+export const generateAIInsightsApi = (payload) => API.post('/ai/opportunity-insights', payload);
+
 export default API;
+
