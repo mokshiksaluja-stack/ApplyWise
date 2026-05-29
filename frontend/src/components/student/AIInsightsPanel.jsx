@@ -4,10 +4,10 @@ import {
   Sparkles, Loader2, AlertCircle, ChevronDown, ChevronUp,
   CheckCircle2, Clock, FileText, Building2, BookOpen, ArrowRight,
   Lightbulb, Target, WifiOff, ShieldAlert, ClipboardList,
-  TrendingUp, CalendarDays, UserCheck
+  CalendarDays
 } from 'lucide-react';
 
-// ─── Shared sub-components ────────────────────────────────────────────────
+// ─── Shared sub-components with robust type-guards ────────────────────────
 
 const InsightSection = ({ icon: Icon, title, color, children, className = '' }) => (
   <div className={`bg-white rounded-2xl border border-gray-100 p-5 shadow-sm ${className}`}>
@@ -19,72 +19,88 @@ const InsightSection = ({ icon: Icon, title, color, children, className = '' }) 
   </div>
 );
 
-const PillList = ({ items, pillClass }) => (
-  <div className="flex flex-wrap gap-2">
-    {items.filter(Boolean).map((item, i) => (
-      <span key={i} className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${pillClass}`}>
-        {item}
-      </span>
-    ))}
-  </div>
-);
-
-const NumberedList = ({ items, accentClass }) => (
-  <ul className="space-y-2.5">
-    {items.filter(Boolean).map((item, i) => (
-      <li key={i} className="flex gap-3 text-sm text-gray-700 leading-relaxed">
-        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white mt-0.5 ${accentClass}`}>
-          {i + 1}
+const PillList = ({ items, pillClass }) => {
+  const safeItems = Array.isArray(items) ? items : (typeof items === 'string' && items.trim() ? [items] : []);
+  if (!safeItems.length) return null;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {safeItems.filter(Boolean).map((item, i) => (
+        <span key={i} className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${pillClass}`}>
+          {item}
         </span>
-        {item}
-      </li>
-    ))}
-  </ul>
-);
+      ))}
+    </div>
+  );
+};
 
-const BulletList = ({ items, icon: Icon = ArrowRight, iconClass = 'text-violet-500' }) => (
-  <ul className="space-y-2">
-    {items.filter(Boolean).map((item, i) => (
-      <li key={i} className="flex gap-2.5 text-sm text-gray-700 leading-relaxed">
-        <Icon size={14} className={`${iconClass} shrink-0 mt-0.5`} />
-        {item}
-      </li>
-    ))}
-  </ul>
-);
+const NumberedList = ({ items, accentClass }) => {
+  const safeItems = Array.isArray(items) ? items : (typeof items === 'string' && items.trim() ? [items] : []);
+  if (!safeItems.length) return null;
+  return (
+    <ul className="space-y-2.5">
+      {safeItems.filter(Boolean).map((item, i) => (
+        <li key={i} className="flex gap-3 text-sm text-gray-700 leading-relaxed">
+          <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white mt-0.5 ${accentClass}`}>
+            {i + 1}
+          </span>
+          {item}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+const BulletList = ({ items, icon: Icon = ArrowRight, iconClass = 'text-violet-500' }) => {
+  const safeItems = Array.isArray(items) ? items : (typeof items === 'string' && items.trim() ? [items] : []);
+  if (!safeItems.length) return null;
+  return (
+    <ul className="space-y-2">
+      {safeItems.filter(Boolean).map((item, i) => (
+        <li key={i} className="flex gap-2.5 text-sm text-gray-700 leading-relaxed">
+          <Icon size={14} className={`${iconClass} shrink-0 mt-0.5`} />
+          {item}
+        </li>
+      ))}
+    </ul>
+  );
+};
 
 // ─── Section: Critical Gaps (triaged) ─────────────────────────────────────
 const GapsSection = ({ criticalGaps }) => {
   const { critical = [], moderate = [], minor = [] } = criticalGaps || {};
-  if (!critical.length && !moderate.length && !minor.length) return null;
+  const safeCritical = Array.isArray(critical) ? critical : (typeof critical === 'string' && critical.trim() ? [critical] : []);
+  const safeModerate = Array.isArray(moderate) ? moderate : (typeof moderate === 'string' && moderate.trim() ? [moderate] : []);
+  const safeMinor = Array.isArray(minor) ? minor : (typeof minor === 'string' && minor.trim() ? [minor] : []);
+
+  if (!safeCritical.length && !safeModerate.length && !safeMinor.length) return null;
   return (
     <InsightSection icon={Target} title="Critical Gaps — Prioritised" color="text-rose-500">
       <div className="space-y-3">
-        {critical.length > 0 && (
+        {safeCritical.length > 0 && (
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-rose-600 mb-1.5">🔴 Must Fix</p>
             <div className="flex flex-wrap gap-1.5">
-              {critical.map((g, i) => (
+              {safeCritical.map((g, i) => (
                 <span key={i} className="text-xs font-semibold px-3 py-1.5 rounded-full border bg-rose-50 text-rose-700 border-rose-200">{g}</span>
               ))}
             </div>
           </div>
         )}
-        {moderate.length > 0 && (
+        {safeModerate.length > 0 && (
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-1.5">🟡 Should Improve</p>
             <div className="flex flex-wrap gap-1.5">
-              {moderate.map((g, i) => (
+              {safeModerate.map((g, i) => (
                 <span key={i} className="text-xs font-semibold px-3 py-1.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200">{g}</span>
               ))}
             </div>
           </div>
         )}
-        {minor.length > 0 && (
+        {safeMinor.length > 0 && (
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5">⚪ Optional Polish</p>
             <div className="flex flex-wrap gap-1.5">
-              {minor.map((g, i) => (
+              {safeMinor.map((g, i) => (
                 <span key={i} className="text-xs font-semibold px-3 py-1.5 rounded-full border bg-gray-50 text-gray-600 border-gray-200">{g}</span>
               ))}
             </div>
@@ -98,34 +114,39 @@ const GapsSection = ({ criticalGaps }) => {
 // ─── Section: Resume Fixes (structured) ───────────────────────────────────
 const ResumeFixes = ({ resumeFixes }) => {
   const { add = [], remove = [], rewrite = [], keywords = [] } = resumeFixes || {};
-  const hasContent = add.length || remove.length || rewrite.length || keywords.length;
+  const safeAdd = Array.isArray(add) ? add : (typeof add === 'string' && add.trim() ? [add] : []);
+  const safeRemove = Array.isArray(remove) ? remove : (typeof remove === 'string' && remove.trim() ? [remove] : []);
+  const safeRewrite = Array.isArray(rewrite) ? rewrite : (typeof rewrite === 'string' && rewrite.trim() ? [rewrite] : []);
+  const safeKeywords = Array.isArray(keywords) ? keywords : (typeof keywords === 'string' && keywords.trim() ? [keywords] : []);
+
+  const hasContent = safeAdd.length || safeRemove.length || safeRewrite.length || safeKeywords.length;
   if (!hasContent) return null;
   return (
     <InsightSection icon={FileText} title="Resume Fixes for This Role" color="text-blue-500">
       <div className="space-y-3">
-        {add.length > 0 && (
+        {safeAdd.length > 0 && (
           <div className="bg-green-50 rounded-xl p-3 border border-green-100">
             <p className="text-[10px] font-black text-green-700 uppercase tracking-widest mb-1.5">➕ Add</p>
-            <BulletList items={add} icon={ArrowRight} iconClass="text-green-500" />
+            <BulletList items={safeAdd} icon={ArrowRight} iconClass="text-green-500" />
           </div>
         )}
-        {remove.length > 0 && (
+        {safeRemove.length > 0 && (
           <div className="bg-red-50 rounded-xl p-3 border border-red-100">
             <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1.5">➖ Remove</p>
-            <BulletList items={remove} icon={ArrowRight} iconClass="text-red-400" />
+            <BulletList items={safeRemove} icon={ArrowRight} iconClass="text-red-400" />
           </div>
         )}
-        {rewrite.length > 0 && (
+        {safeRewrite.length > 0 && (
           <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
             <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-1.5">✏️ Rewrite</p>
-            <BulletList items={rewrite} icon={ArrowRight} iconClass="text-blue-400" />
+            <BulletList items={safeRewrite} icon={ArrowRight} iconClass="text-blue-400" />
           </div>
         )}
-        {keywords.length > 0 && (
+        {safeKeywords.length > 0 && (
           <div>
             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5">🏷 Keywords to Include</p>
             <div className="flex flex-wrap gap-1.5">
-              {keywords.map((k, i) => (
+              {safeKeywords.map((k, i) => (
                 <span key={i} className="text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100">{k}</span>
               ))}
             </div>
@@ -139,26 +160,30 @@ const ResumeFixes = ({ resumeFixes }) => {
 // ─── Section: Interview Focus ──────────────────────────────────────────────
 const InterviewFocusSection = ({ interviewFocus }) => {
   const { topics = [], rounds = [], focus = [] } = interviewFocus || {};
-  if (!topics.length && !rounds.length && !focus.length) return null;
+  const safeTopics = Array.isArray(topics) ? topics : (typeof topics === 'string' && topics.trim() ? [topics] : []);
+  const safeRounds = Array.isArray(rounds) ? rounds : (typeof rounds === 'string' && rounds.trim() ? [rounds] : []);
+  const safeFocus = Array.isArray(focus) ? focus : (typeof focus === 'string' && focus.trim() ? [focus] : []);
+
+  if (!safeTopics.length && !safeRounds.length && !safeFocus.length) return null;
   return (
     <InsightSection icon={BookOpen} title="Likely Interview Focus Areas" color="text-teal-500">
       <div className="space-y-4">
-        {rounds.length > 0 && (
+        {safeRounds.length > 0 && (
           <div>
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Predicted Rounds</p>
-            <NumberedList items={rounds} accentClass="bg-teal-500" />
+            <NumberedList items={safeRounds} accentClass="bg-teal-500" />
           </div>
         )}
-        {topics.length > 0 && (
+        {safeTopics.length > 0 && (
           <div>
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Technical Topics</p>
-            <PillList items={topics} pillClass="bg-teal-50 text-teal-700 border-teal-200" />
+            <PillList items={safeTopics} pillClass="bg-teal-50 text-teal-700 border-teal-200" />
           </div>
         )}
-        {focus.length > 0 && (
+        {safeFocus.length > 0 && (
           <div>
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">What They'll Probe Hardest</p>
-            <BulletList items={focus} icon={ArrowRight} iconClass="text-teal-500" />
+            <BulletList items={safeFocus} icon={ArrowRight} iconClass="text-teal-500" />
           </div>
         )}
       </div>
@@ -169,16 +194,20 @@ const InterviewFocusSection = ({ interviewFocus }) => {
 // ─── Section: Action Plan (sprint-style) ──────────────────────────────────
 const ActionPlanSection = ({ actionPlan }) => {
   const { top3 = [], day3 = [], day7 = [], day14 = [] } = actionPlan || {};
+  const safeTop3 = Array.isArray(top3) ? top3 : (typeof top3 === 'string' && top3.trim() ? [top3] : []);
+  const safeDay3 = Array.isArray(day3) ? day3 : (typeof day3 === 'string' && day3.trim() ? [day3] : []);
+  const safeDay7 = Array.isArray(day7) ? day7 : (typeof day7 === 'string' && day7.trim() ? [day7] : []);
+  const safeDay14 = Array.isArray(day14) ? day14 : (typeof day14 === 'string' && day14.trim() ? [day14] : []);
+
   const [open, setOpen] = useState('top3');
   const tabs = [
-    { id: 'top3',  label: 'Top 3 Now',  items: top3,  accent: 'bg-violet-600' },
-    { id: 'day3',  label: '3-Day Plan', items: day3,  accent: 'bg-blue-500'   },
-    { id: 'day7',  label: '7-Day Plan', items: day7,  accent: 'bg-indigo-500' },
-    { id: 'day14', label: '14-Day Plan',items: day14, accent: 'bg-slate-600'  },
+    { id: 'top3',  label: 'Top 3 Now',  items: safeTop3,  accent: 'bg-violet-600' },
+    { id: 'day3',  label: '3-Day Plan', items: safeDay3,  accent: 'bg-blue-500'   },
+    { id: 'day7',  label: '7-Day Plan', items: safeDay7,  accent: 'bg-indigo-500' },
+    { id: 'day14', label: '14-Day Plan',items: safeDay14, accent: 'bg-slate-600'  },
   ];
   return (
     <InsightSection icon={CalendarDays} title="Personalised Action Plan" color="text-violet-500">
-      {/* Tab strip */}
       <div className="flex gap-1.5 mb-4 flex-wrap">
         {tabs.map(t => (
           <button
@@ -203,13 +232,14 @@ const ActionPlanSection = ({ actionPlan }) => {
 
 // ─── Section: Pre-Apply Checklist ─────────────────────────────────────────
 const ChecklistSection = ({ items }) => {
+  const safeItems = Array.isArray(items) ? items : (typeof items === 'string' && items.trim() ? [items] : []);
   const [checked, setChecked] = useState({});
   const toggle = (i) => setChecked(prev => ({ ...prev, [i]: !prev[i] }));
-  if (!items?.length) return null;
+  if (!safeItems?.length) return null;
   return (
     <InsightSection icon={ClipboardList} title="Do Before Applying — Checklist" color="text-emerald-500">
       <ul className="space-y-2.5">
-        {items.map((item, i) => (
+        {safeItems.map((item, i) => (
           <li
             key={i}
             onClick={() => toggle(i)}
@@ -229,7 +259,7 @@ const ChecklistSection = ({ items }) => {
         ))}
       </ul>
       <p className="text-[10px] text-gray-400 mt-3 text-center">
-        {Object.values(checked).filter(Boolean).length} / {items.length} completed
+        {Object.values(checked).filter(Boolean).length} / {safeItems.length} completed
       </p>
     </InsightSection>
   );
@@ -329,7 +359,7 @@ export default function AIInsightsPanel({ job, profile, evaluation }) {
     );
   }
 
-  // ── Error (network-only; API errors come back as fallback, not error state) ─
+  // ── Error ──────────────────────────────────────────────────────────────
   if (status === 'error') {
     return (
       <div className="bg-red-50 rounded-2xl border border-red-200 p-6 shadow-sm">
@@ -353,124 +383,129 @@ export default function AIInsightsPanel({ job, profile, evaluation }) {
   }
 
   // ── Success ────────────────────────────────────────────────────────────
-  return (
-    <div className="rounded-2xl border border-violet-200 shadow-sm overflow-hidden">
-      {/* Panel header */}
-      <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-            <Sparkles size={16} className="text-white" />
+  if (status === 'success' && insights) {
+    return (
+      <div className="rounded-2xl border border-violet-200 shadow-sm overflow-hidden">
+        {/* Panel header */}
+        <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+              <Sparkles size={16} className="text-white" />
+            </div>
+            <div>
+              <h2 className="text-sm font-black text-white tracking-tight">AI Career Mentor Report</h2>
+              <p className="text-[11px] text-violet-200 font-medium">
+                {isFallback ? 'System-generated guidance' : 'Powered by Google Gemini'} · For guidance only
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-sm font-black text-white tracking-tight">AI Career Mentor Report</h2>
-            <p className="text-[11px] text-violet-200 font-medium">
-              {isFallback ? 'System-generated guidance' : 'Powered by Google Gemini'} · For guidance only
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleGenerate}
+              className="text-[10px] font-black text-violet-200 hover:text-white uppercase tracking-widest transition-colors px-3 py-1.5 rounded-lg hover:bg-white/10"
+            >
+              Regenerate
+            </button>
+            <button
+              onClick={() => setExpanded(v => !v)}
+              className="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors"
+            >
+              {expanded ? <ChevronUp size={16} className="text-white" /> : <ChevronDown size={16} className="text-white" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Ribbon — fallback warning OR live disclaimer */}
+        {isFallback ? (
+          <div className="bg-amber-50 border-b border-amber-200 px-6 py-2.5 flex items-center gap-2">
+            <WifiOff size={13} className="text-amber-600 shrink-0" />
+            <p className="text-[11px] text-amber-800 font-semibold">
+              AI service temporarily unavailable — showing system-generated guidance based on your profile.
             </p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleGenerate}
-            className="text-[10px] font-black text-violet-200 hover:text-white uppercase tracking-widest transition-colors px-3 py-1.5 rounded-lg hover:bg-white/10"
-          >
-            Regenerate
-          </button>
-          <button
-            onClick={() => setExpanded(v => !v)}
-            className="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors"
-          >
-            {expanded ? <ChevronUp size={16} className="text-white" /> : <ChevronDown size={16} className="text-white" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Ribbon — fallback warning OR live disclaimer */}
-      {isFallback ? (
-        <div className="bg-amber-50 border-b border-amber-200 px-6 py-2.5 flex items-center gap-2">
-          <WifiOff size={13} className="text-amber-600 shrink-0" />
-          <p className="text-[11px] text-amber-800 font-semibold">
-            AI service temporarily unavailable — showing system-generated guidance based on your profile.
-          </p>
-        </div>
-      ) : (
-        <div className="bg-violet-50 border-b border-violet-100 px-6 py-2 flex items-center gap-2">
-          <AlertCircle size={12} className="text-violet-500 shrink-0" />
-          <p className="text-[11px] text-violet-700 font-semibold">
-            AI insights are for guidance only. Eligibility is determined solely by the system's engine.
-          </p>
-        </div>
-      )}
-
-      {/* Collapsible content */}
-      {expanded && (
-        <div className="bg-gray-50 p-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-
-          {/* 1. Fit Summary */}
-          {insights.fitSummary && (
-            <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-2xl border border-violet-100 p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles size={15} className="text-violet-500" />
-                <span className="text-xs font-black text-violet-700 uppercase tracking-widest">Fit Summary</span>
-              </div>
-              <p className="text-sm text-gray-700 leading-relaxed font-medium">{insights.fitSummary}</p>
-            </div>
-          )}
-
-          {/* 2. Why You Match + Rejection Risks (side by side on lg) */}
-          <div className="grid lg:grid-cols-2 gap-4">
-            {insights.whyYouMatch?.length > 0 && (
-              <InsightSection icon={CheckCircle2} title="Why You Match This Role" color="text-emerald-500">
-                <BulletList items={insights.whyYouMatch} icon={CheckCircle2} iconClass="text-emerald-400" />
-              </InsightSection>
-            )}
-            {insights.rejectionRisks?.length > 0 && (
-              <InsightSection icon={ShieldAlert} title="Main Rejection Risks" color="text-orange-500">
-                <BulletList items={insights.rejectionRisks} icon={ShieldAlert} iconClass="text-orange-400" />
-              </InsightSection>
-            )}
+        ) : (
+          <div className="bg-violet-50 border-b border-violet-100 px-6 py-2 flex items-center gap-2">
+            <AlertCircle size={12} className="text-violet-500 shrink-0" />
+            <p className="text-[11px] text-violet-700 font-semibold">
+              AI insights are for guidance only. Eligibility is determined solely by the system's engine.
+            </p>
           </div>
+        )}
 
-          {/* 3. Critical Gaps */}
-          <GapsSection criticalGaps={insights.criticalGaps} />
+        {/* Collapsible content */}
+        {expanded && (
+          <div className="bg-gray-50 p-6 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
 
-          {/* 4. Prep Time Estimates */}
-          {insights.prepTimeEstimate?.length > 0 && (
-            <InsightSection icon={Clock} title="Estimated Time to Improve" color="text-amber-500">
-              <div className="grid sm:grid-cols-2 gap-2">
-                {insights.prepTimeEstimate.map((entry, i) => {
-                  const [skill, time] = entry.split('→').map(s => s.trim());
-                  return (
-                    <div key={i} className="flex items-center justify-between bg-amber-50 border border-amber-100 rounded-xl px-4 py-2.5">
-                      <span className="text-xs font-bold text-gray-700 truncate mr-2">{skill || entry}</span>
-                      {time && <span className="text-xs font-black text-amber-700 shrink-0 bg-amber-100 px-2 py-0.5 rounded-lg">{time}</span>}
-                    </div>
-                  );
-                })}
+            {/* 1. Fit Summary */}
+            {insights.fitSummary && (
+              <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-2xl border border-violet-100 p-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles size={15} className="text-violet-500" />
+                  <span className="text-xs font-black text-violet-700 uppercase tracking-widest">Fit Summary</span>
+                </div>
+                <p className="text-sm text-gray-700 leading-relaxed font-medium">{insights.fitSummary}</p>
               </div>
-            </InsightSection>
-          )}
+            )}
 
-          {/* 5. Resume Fixes */}
-          <ResumeFixes resumeFixes={insights.resumeFixes} />
+            {/* 2. Why You Match + Rejection Risks (side by side on lg) */}
+            <div className="grid lg:grid-cols-2 gap-4">
+              {((Array.isArray(insights.whyYouMatch) && insights.whyYouMatch.length > 0) || (typeof insights.whyYouMatch === 'string' && insights.whyYouMatch.trim())) && (
+                <InsightSection icon={CheckCircle2} title="Why You Match This Role" color="text-emerald-500">
+                  <BulletList items={insights.whyYouMatch} icon={CheckCircle2} iconClass="text-emerald-400" />
+                </InsightSection>
+              )}
+              {((Array.isArray(insights.rejectionRisks) && insights.rejectionRisks.length > 0) || (typeof insights.rejectionRisks === 'string' && insights.rejectionRisks.trim())) && (
+                <InsightSection icon={ShieldAlert} title="Main Rejection Risks" color="text-orange-500">
+                  <BulletList items={insights.rejectionRisks} icon={ShieldAlert} iconClass="text-orange-400" />
+                </InsightSection>
+              )}
+            </div>
 
-          {/* 6. Interview Focus */}
-          <InterviewFocusSection interviewFocus={insights.interviewFocus} />
+            {/* 3. Critical Gaps */}
+            <GapsSection criticalGaps={insights.criticalGaps} />
 
-          {/* 7. Company-Specific Advice */}
-          {insights.companySpecificAdvice?.length > 0 && (
-            <InsightSection icon={Building2} title={`${job?.company} — Company-Specific Advice`} color="text-indigo-500">
-              <BulletList items={insights.companySpecificAdvice} icon={ArrowRight} iconClass="text-indigo-400" />
-            </InsightSection>
-          )}
+            {/* 4. Prep Time Estimates */}
+            {Array.isArray(insights.prepTimeEstimate) && insights.prepTimeEstimate.length > 0 && (
+              <InsightSection icon={Clock} title="Estimated Time to Improve" color="text-amber-500">
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {insights.prepTimeEstimate.map((entry, i) => {
+                    if (typeof entry !== 'string') return null;
+                    const [skill, time] = entry.split('→').map(s => s.trim());
+                    return (
+                      <div key={i} className="flex items-center justify-between bg-amber-50 border border-amber-100 rounded-xl px-4 py-2.5">
+                        <span className="text-xs font-bold text-gray-700 truncate mr-2">{skill || entry}</span>
+                        {time && <span className="text-xs font-black text-amber-700 shrink-0 bg-amber-100 px-2 py-0.5 rounded-lg">{time}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </InsightSection>
+            )}
 
-          {/* 8. Action Plan */}
-          {insights.actionPlan && <ActionPlanSection actionPlan={insights.actionPlan} />}
+            {/* 5. Resume Fixes */}
+            <ResumeFixes resumeFixes={insights.resumeFixes} />
 
-          {/* 9. Pre-Apply Checklist */}
-          <ChecklistSection items={insights.preApplyChecklist} />
+            {/* 6. Interview Focus */}
+            <InterviewFocusSection interviewFocus={insights.interviewFocus} />
 
-        </div>
-      )}
-    </div>
-  );
+            {/* 7. Company-Specific Advice */}
+            {((Array.isArray(insights.companySpecificAdvice) && insights.companySpecificAdvice.length > 0) || (typeof insights.companySpecificAdvice === 'string' && insights.companySpecificAdvice.trim())) && (
+              <InsightSection icon={Building2} title={`${job?.company} — Company-Specific Advice`} color="text-indigo-500">
+                <BulletList items={insights.companySpecificAdvice} icon={ArrowRight} iconClass="text-indigo-400" />
+              </InsightSection>
+            )}
+
+            {/* 8. Action Plan */}
+            {insights.actionPlan && <ActionPlanSection actionPlan={insights.actionPlan} />}
+
+            {/* 9. Pre-Apply Checklist */}
+            <ChecklistSection items={insights.preApplyChecklist} />
+
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return null;
 }
