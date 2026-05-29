@@ -6,7 +6,7 @@ import SkillsStep from "../components/profile/SkillsStep";
 import PreferencesStep from "../components/profile/PreferencesStep";
 import LinksStep from "../components/profile/LinksStep";
 import ProfileStepper from "../components/profile/ProfileStepper";
-import { saveStudentProfile, fetchStudentProfile, updateStudentProfile } from "../services/studentService";
+import { saveStudentProfile, fetchStudentProfile, updateStudentProfile, fetchStudentProfileByUserId } from "../services/studentService";
 
 export default function ProfileWizard() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -17,81 +17,111 @@ export default function ProfileWizard() {
   const [submitError, setSubmitError] = useState("");
   // Determine if we already have a saved profile ID stored logically
   const cachedId = localStorage.getItem("studentId");
-  const [studentId, setStudentId] = useState(
-    cachedId && cachedId !== "null" && cachedId !== "undefined" ? cachedId : null
-  );
+  let uId = localStorage.getItem("userId");
+  const [studentId, setStudentId] = useState(() => {
+    // Self-healing check 1: If userId is missing but studentId is present, the studentId is actually the userId (due to signup bug)
+    if (cachedId && cachedId !== "null" && cachedId !== "undefined" && (!uId || uId === "null" || uId === "undefined")) {
+      localStorage.setItem("userId", cachedId);
+      localStorage.removeItem("studentId");
+      uId = cachedId;
+      return null;
+    }
+    // Self-healing check 2: If studentId is accidentally equal to userId, treat it as null!
+    if (cachedId && uId && cachedId === uId) {
+      localStorage.removeItem("studentId");
+      return null;
+    }
+    return cachedId && cachedId !== "null" && cachedId !== "undefined" ? cachedId : null;
+  });
 
   const [formData, setFormData] = useState({
   // Personal Info
-  fullName: "John Doe",
-  enrollmentNumber: "EN12345678",
-  collegeEmail: "john.doe@college.edu",
-  personalEmail: "john.doe.personal@gmail.com",
-  phone: "9876543210",
-  gender: "Male",
+  fullName: "",
+  enrollmentNumber: "",
+  collegeEmail: "",
+  personalEmail: "",
+  phone: "",
+  gender: "",
 
   // Academic Info
-  degree: "B.Tech",
-  branch: "Computer Science",
-  semester: "8th",
-  cgpa: "8.5",
-  tenthPercentage: "90",
-  twelfthPercentage: "85",
-  backlogs: "0",
-  academicStatus: "Active",
+  degree: "",
+  branch: "",
+  semester: "",
+  cgpa: "",
+  tenthPercentage: "",
+  twelfthPercentage: "",
+  backlogs: "",
+  academicStatus: "",
 
   // Skills & Technologies
-  primaryDomain: "Full Stack Development",
-  primaryLanguage: "JavaScript",
-  overallSkillLevel: "Intermediate",
-  technicalSkills: ["React", "NodeJS", "MongoDB"],
-  skillProficiency: { "React": "Advanced", "NodeJS": "Intermediate", "MongoDB": "Intermediate" },
-  databaseFamiliarity: "MongoDB, SQL",
-  backendFamiliarity: "NodeJS, ExpressJS",
-  communicationLevel: "Excellent",
-  problemSolvingLevel: "Strong",
-  teamworkLevel: "Excellent",
-  leadershipLevel: "Good",
-  certificationSource: "Coursera",
-  codingPlatform: "LeetCode",
-  dsaLevel: "Intermediate",
+  primaryDomain: "",
+  primaryLanguage: "",
+  overallSkillLevel: "",
+  technicalSkills: [],
+  skillProficiency: {},
+  databaseFamiliarity: "",
+  backendFamiliarity: "",
+  communicationLevel: "",
+  problemSolvingLevel: "",
+  teamworkLevel: "",
+  leadershipLevel: "",
+  certificationSource: "",
+  codingPlatform: "",
+  dsaLevel: "",
 
   // Career Preferences
-  interestedRoles: ["Software Engineer", "Frontend Developer"],
-  preferredJobType: "Full-Time",
-  preferredWorkMode: "Hybrid",
-  preferredLocation: "Bangalore",
-  openToRelocation: "Yes",
-  preferredDomains: ["IT", "Product"],
-  expectedCompensation: "10 LPA",
-  availabilityStatus: "Immediate",
-  preferredCompanyType: "MNC",
-  offCampusInterest: "Yes",
+  interestedRoles: [],
+  preferredJobType: "",
+  preferredWorkMode: "",
+  preferredLocation: "",
+  openToRelocation: "",
+  preferredDomains: [],
+  expectedCompensation: "",
+  availabilityStatus: "",
+  preferredCompanyType: "",
+  offCampusInterest: "",
 
   // Resume & Links
-  resumeLink: "https://example.com/resume.pdf",
-  resumeStatus: "Updated",
-  linkedIn: "https://linkedin.com/in/johndoe",
-  github: "https://github.com/johndoe",
-  portfolio: "https://johndoe.dev",
-  leetcode: "https://leetcode.com/johndoe",
-  additionalProfilePlatform: "HackerRank",
-  additionalProfileLink: "https://hackerrank.com/johndoe",
-  profileVisibility: "Public",
+  resumeLink: "",
+  resumeStatus: "",
+  linkedIn: "",
+  github: "",
+  portfolio: "",
+  leetcode: "",
+  additionalProfilePlatform: "",
+  additionalProfileLink: "",
+  profileVisibility: "",
 });
 
-  // Pre-fill existing data if we hold a studentId
+  // Pre-fill existing data if we hold a studentId or a userId
   useEffect(() => {
     const loadProfileData = async () => {
-      if (studentId) {
+      const uId = localStorage.getItem("userId");
+      if (studentId || (uId && uId !== "null" && uId !== "undefined")) {
         setIsFetching(true);
         try {
-          const fetchedProfile = await fetchStudentProfile(studentId);
-          // Pre-fill the state
-          setFormData((prev) => ({
-            ...prev,
-            ...fetchedProfile,
-          }));
+          let fetchedProfile = null;
+          if (studentId) {
+            fetchedProfile = await fetchStudentProfile(studentId);
+          } else {
+            try {
+              fetchedProfile = await fetchStudentProfileByUserId(uId);
+              if (fetchedProfile && fetchedProfile._id) {
+                setStudentId(fetchedProfile._id);
+                localStorage.setItem("studentId", fetchedProfile._id);
+              }
+            } catch (userFetchError) {
+              console.log("No profile associated with this userId yet:", userFetchError.message);
+            }
+          }
+
+          if (fetchedProfile) {
+            // Pre-fill the state
+            setFormData((prev) => ({
+              ...prev,
+              ...fetchedProfile,
+            }));
+          }
         } catch (error) {
           setSubmitError(error.message || "Failed to load existing profile.");
         } finally {
@@ -243,21 +273,22 @@ export default function ProfileWizard() {
       setIsLoading(true);
 
       try {
+        // Always attach userId so the profile is linked to the auth account
+        const userId = localStorage.getItem("userId");
+        const payload = { ...formData, userId: userId || undefined };
+
         if (studentId) {
           // Edit existing profile
-          await updateStudentProfile(studentId, formData);
+          await updateStudentProfile(studentId, payload);
         } else {
           // Create new profile
-          const response = await saveStudentProfile(formData);
+          const response = await saveStudentProfile(payload);
           // Store ID securely in client for subsequent re-edits
           const newId = response.student._id;
           setStudentId(newId);
           localStorage.setItem("studentId", newId);
         }
         
-        console.log("=== FINAL FORM DATA ===");
-        console.dir(formData, { depth: null });
-        console.log("=======================");
         setIsSuccess(true);
       } catch (error) {
         setSubmitError(error.message || "Failed to save profile. Please try again.");

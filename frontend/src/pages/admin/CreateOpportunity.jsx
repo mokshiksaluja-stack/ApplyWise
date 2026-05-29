@@ -5,6 +5,67 @@ import { DashboardController } from '../../controllers/dashboardController';
 import { ArrowLeft, Save, Briefcase, IndianRupee, GraduationCap, Code2, FileText, CheckCircle, FolderOpen, Lightbulb, Users, Settings, Plus, X } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 
+const FormContext = React.createContext(null);
+
+const InputField = ({ label, name, type="text", placeholder, helperText, required=false }) => {
+  const { formData, handleInputChange } = React.useContext(FormContext);
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-gray-700">{label} {required && <span className="text-red-500">*</span>}</label>
+      {type === 'textarea' ? (
+        <textarea name={name} value={formData[name] || ''} onChange={handleInputChange} placeholder={placeholder} required={required} className="p-2.5 rounded-lg border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-y min-h-[100px] text-gray-900" />
+      ) : (
+        <input type={type} name={name} value={formData[name] || ''} onChange={handleInputChange} placeholder={placeholder} required={required} className="p-2.5 rounded-lg border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-gray-900" />
+      )}
+      {helperText && <p className="text-xs text-gray-500 mt-0.5">{helperText}</p>}
+    </div>
+  );
+};
+
+const SelectField = ({ label, name, options, helperText, required=false }) => {
+  const { formData, handleInputChange } = React.useContext(FormContext);
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-gray-700">{label} {required && <span className="text-red-500">*</span>}</label>
+      <select name={name} value={formData[name] || ''} onChange={handleInputChange} required={required} className="p-2.5 rounded-lg border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-gray-900">
+        {options.map(opt => <option key={opt.value || opt} value={opt.value || opt}>{opt.label || opt}</option>)}
+      </select>
+      {helperText && <p className="text-xs text-gray-500 mt-0.5">{helperText}</p>}
+    </div>
+  );
+};
+
+const ToggleField = ({ label, name, helperText }) => {
+  const { formData, handleInputChange } = React.useContext(FormContext);
+  return (
+    <div className="flex flex-col gap-1.5 justify-center">
+      <label className="flex items-center gap-3 cursor-pointer">
+        <div className="relative">
+          <input type="checkbox" name={name} checked={!!formData[name]} onChange={handleInputChange} className="sr-only" />
+          <div className={`block w-10 h-6 rounded-full transition-colors ${formData[name] ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+          <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${formData[name] ? 'transform translate-x-4' : ''}`}></div>
+        </div>
+        <span className="text-sm font-medium text-gray-700">{label}</span>
+      </label>
+      {helperText && <p className="text-xs text-gray-500 ml-13">{helperText}</p>}
+    </div>
+  );
+};
+
+const Section = ({ title, icon: Icon, children }) => (
+  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
+    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+      <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+        <Icon className="w-5 h-5" />
+      </div>
+      <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {children}
+    </div>
+  </div>
+);
+
 const CreateOpportunity = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -211,58 +272,9 @@ const CreateOpportunity = () => {
     }
   };
 
-  const InputField = ({ label, name, type="text", placeholder, helperText, required=false }) => (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-gray-700">{label} {required && <span className="text-red-500">*</span>}</label>
-      {type === 'textarea' ? (
-        <textarea name={name} value={formData[name]} onChange={handleInputChange} placeholder={placeholder} required={required} className="p-2.5 rounded-lg border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-y min-h-[100px] text-gray-900" />
-      ) : (
-        <input type={type} name={name} value={formData[name]} onChange={handleInputChange} placeholder={placeholder} required={required} className="p-2.5 rounded-lg border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-gray-900" />
-      )}
-      {helperText && <p className="text-xs text-gray-500 mt-0.5">{helperText}</p>}
-    </div>
-  );
-
-  const SelectField = ({ label, name, options, helperText, required=false }) => (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-gray-700">{label} {required && <span className="text-red-500">*</span>}</label>
-      <select name={name} value={formData[name]} onChange={handleInputChange} required={required} className="p-2.5 rounded-lg border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-gray-900">
-        {options.map(opt => <option key={opt.value || opt} value={opt.value || opt}>{opt.label || opt}</option>)}
-      </select>
-      {helperText && <p className="text-xs text-gray-500 mt-0.5">{helperText}</p>}
-    </div>
-  );
-
-  const ToggleField = ({ label, name, helperText }) => (
-    <div className="flex flex-col gap-1.5 justify-center">
-      <label className="flex items-center gap-3 cursor-pointer">
-        <div className="relative">
-          <input type="checkbox" name={name} checked={formData[name]} onChange={handleInputChange} className="sr-only" />
-          <div className={`block w-10 h-6 rounded-full transition-colors ${formData[name] ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-          <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${formData[name] ? 'transform translate-x-4' : ''}`}></div>
-        </div>
-        <span className="text-sm font-medium text-gray-700">{label}</span>
-      </label>
-      {helperText && <p className="text-xs text-gray-500 ml-13">{helperText}</p>}
-    </div>
-  );
-
-  const Section = ({ title, icon: Icon, children }) => (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-        <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-          <Icon className="w-5 h-5" />
-        </div>
-        <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {children}
-      </div>
-    </div>
-  );
-
   return (
-    <Layout>
+    <FormContext.Provider value={{ formData, handleInputChange }}>
+      <Layout>
       <div className="max-w-5xl mx-auto pb-12">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div className="flex items-center gap-4">
@@ -488,6 +500,7 @@ const CreateOpportunity = () => {
         </form>
       </div>
     </Layout>
+    </FormContext.Provider>
   );
 };
 

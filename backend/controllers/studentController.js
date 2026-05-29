@@ -6,6 +6,11 @@ const Student = require('../models/Student');
 const saveStudentProfile = async (req, res) => {
   try {
     const profileData = req.body;
+    
+    // Sync legacy/administrative fields
+    if (profileData.fullName) profileData.name = profileData.fullName;
+    if (profileData.collegeEmail) profileData.email = profileData.collegeEmail;
+
     console.log(`\n--- [DEBUG] NEW STUDENT PROFILE SAVE INFO ---`);
     console.log(`[Flow] DB Target: ${Student.db.name} | Collection: ${Student.collection.name}`);
     console.log(`[Flow] Incoming Payload:`, JSON.stringify(profileData, null, 2));
@@ -49,6 +54,10 @@ const getStudentProfile = async (req, res) => {
 // @route   PUT /api/students/profile/:id
 const updateStudentProfile = async (req, res) => {
   try {
+    // Sync legacy/administrative fields
+    if (req.body.fullName) req.body.name = req.body.fullName;
+    if (req.body.collegeEmail) req.body.email = req.body.collegeEmail;
+
     console.log(`\n--- [DEBUG] UPDATE STUDENT PROFILE INFO ---`);
     console.log(`[Flow] DB Target: ${Student.db.name} | Collection: ${Student.collection.name}`);
     console.log(`[Flow] Updating ID: ${req.params.id}`);
@@ -119,6 +128,19 @@ const updateStudent = async (req, res) => {
   }
 };
 
+const getStudentProfileByUserId = async (req, res) => {
+  try {
+    const student = await Student.findOne({ userId: req.params.userId });
+    if (!student) {
+      return res.status(404).json({ message: "Student profile not found" });
+    }
+    res.json(student);
+  } catch (error) {
+    console.error("Error fetching student profile by userId:", error.message);
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
 const deleteStudent = async (req, res) => {
   try {
     const student = await Student.findByIdAndDelete(req.params.id);
@@ -132,6 +154,7 @@ const deleteStudent = async (req, res) => {
 module.exports = {
   saveStudentProfile,
   getStudentProfile,
+  getStudentProfileByUserId,
   updateStudentProfile,
   getStudents,
   getStudentById,

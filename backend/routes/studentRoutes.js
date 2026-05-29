@@ -5,6 +5,7 @@ const studentController = require('../controllers/studentController');
 // --- STUDENT Profile Routes ---
 router.post('/profile', studentController.saveStudentProfile);
 router.get('/profile/:id', studentController.getStudentProfile);
+router.get('/user/:userId', studentController.getStudentProfileByUserId);
 router.put('/profile/:id', studentController.updateStudentProfile);
 
 // --- ADMIN Management Routes ---

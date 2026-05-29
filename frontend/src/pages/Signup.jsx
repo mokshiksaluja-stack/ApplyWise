@@ -16,7 +16,7 @@ export default function Signup() {
       localStorage.setItem('token', data.token);
       
       if (data.user && data.user.id) {
-          localStorage.setItem('studentId', data.user.id);
+          localStorage.setItem('userId', data.user.id);
       }
       
       localStorage.setItem('userRole', role);

@@ -4,6 +4,9 @@ const mongoose = require('mongoose');
 // For beginner friendly validation, we use required: true where strictly needed
 // and matching datatypes.
 const studentSchema = new mongoose.Schema({
+  // Link to registered User
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', unique: true, sparse: true },
+
   // Personal Info
   fullName: { type: String, required: true },
   name: { type: String }, // To support admin side legacy fields

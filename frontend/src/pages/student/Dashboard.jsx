@@ -10,7 +10,7 @@ import EmptyState from "../../components/UI/EmptyState";
 import { useToast } from "../../context/ToastContext";
 import { useNotifications } from "../../context/NotificationContext";
 
-import { fetchStudentProfile } from "../../services/studentService";
+import { fetchStudentProfile, fetchStudentProfileByUserId } from "../../services/studentService";
 import { fetchStudentOpportunities } from "../../services/opportunityService";
 import { calculateProfileCompletion, calculateReadinessScore } from "../../utils/studentMetrics";
 import { evaluateEligibility } from "../../utils/eligibilityEngine";
@@ -30,21 +30,49 @@ export default function Dashboard() {
 
   useEffect(() => {
     const getProfile = async () => {
-      const studentId = localStorage.getItem("studentId") || localStorage.getItem("userId");
-      if (!studentId || studentId === "null") {
-        setLoading(false);
-        return;
-      }
+      const storedStudentId = localStorage.getItem("studentId");
+      const storedUserId = localStorage.getItem("userId");
 
+      setLoading(true);
       try {
-        const [data, opps, prepResponse] = await Promise.all([
-          fetchStudentProfile(studentId),
-          fetchStudentOpportunities(),
-          fetchPrepResources()
+        // Fetch opportunities and prep resources in parallel, handling their errors individually so they don't break page load
+        const [opps, prepResponse] = await Promise.all([
+          fetchStudentOpportunities().catch(err => {
+            console.error("Failed to fetch opportunities", err);
+            return [];
+          }),
+          fetchPrepResources().catch(err => {
+            console.error("Failed to fetch prep resources", err);
+            return { data: [] };
+          })
         ]);
-        setProfile(data);
         setOpportunities(opps);
         setDashboardPrep(Array.isArray(prepResponse.data) ? prepResponse.data.slice(0, 3) : []);
+
+        // Load profile gracefully
+        let profileData = null;
+        if (storedStudentId && storedStudentId !== "null" && storedStudentId !== "undefined") {
+          try {
+            profileData = await fetchStudentProfile(storedStudentId);
+          } catch (profileErr) {
+            console.warn("Failed to fetch profile by studentId, trying userId fallback", profileErr);
+          }
+        }
+
+        // If we don't have profile yet or studentId load failed, fall back to querying by userId
+        if (!profileData && storedUserId && storedUserId !== "null" && storedUserId !== "undefined") {
+          try {
+            profileData = await fetchStudentProfileByUserId(storedUserId);
+            // If found, sync back to localStorage to avoid future fallback delays
+            if (profileData && profileData._id) {
+              localStorage.setItem("studentId", profileData._id);
+            }
+          } catch (userProfileErr) {
+            console.log("No profile associated with this userId yet.");
+          }
+        }
+
+        setProfile(profileData);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         showToast("Couldn't refresh dashboard data.", "error");

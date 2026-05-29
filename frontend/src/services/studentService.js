@@ -62,6 +62,32 @@ export const fetchStudentProfile = async (id) => {
 };
 
 /**
+ * Fetch an existing student profile by User ID (linked auth account)
+ */
+export const fetchStudentProfileByUserId = async (userId) => {
+  try {
+    const response = await fetch(`/api/students/user/${userId}`);
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      throw new Error(`API Error: Received invalid response from server (Status ${response.status}).`);
+    }
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to fetch student profile.");
+    }
+
+    return data;
+  } catch (error) {
+    if (error.message.includes("Failed to fetch")) {
+      throw new Error("Unable to connect to the backend server.");
+    }
+    throw error;
+  }
+};
+
+/**
  * Update an existing student profile
  */
 export const updateStudentProfile = async (id, profileData) => {
