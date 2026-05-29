@@ -1,37 +1,21 @@
 // src/services/studentService.js
+import API from './api';
 
 /**
- * Service to handle student profile API requests.
+ * Service to handle student profile API requests using the central API Axios instance.
+ * This guarantees the backend base URL and Authorization headers are automatically applied.
  */
 
+/**
+ * Save a new student profile
+ */
 export const saveStudentProfile = async (profileData) => {
   try {
-    const response = await fetch("/api/students/profile", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(profileData),
-    });
-
-    let data;
-    try {
-      data = await response.json();
-    } catch (parseError) {
-      throw new Error(`API Error: Received invalid response from server (Status ${response.status}). Check if backend is running on the correct port.`);
-    }
-
-    if (!response.ok) {
-      const errorMessage = data.error ? `${data.message} (${data.error})` : data.message;
-      throw new Error(errorMessage || "Something went wrong while saving the profile.");
-    }
-
-    return data;
+    const response = await API.post('/students/profile', profileData);
+    return response.data;
   } catch (error) {
-    if (error.message.includes("Failed to fetch")) {
-      throw new Error("Unable to connect to the backend server. Please ensure it is running.");
-    }
-    throw error;
+    const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
+    throw new Error(errorMessage || "Something went wrong while saving the profile.");
   }
 };
 
@@ -40,24 +24,11 @@ export const saveStudentProfile = async (profileData) => {
  */
 export const fetchStudentProfile = async (id) => {
   try {
-    const response = await fetch(`/api/students/profile/${id}`);
-    let data;
-    try {
-      data = await response.json();
-    } catch (parseError) {
-      throw new Error(`API Error: Received invalid response from server (Status ${response.status}).`);
-    }
-
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to fetch student profile.");
-    }
-
-    return data;
+    const response = await API.get(`/students/profile/${id}`);
+    return response.data;
   } catch (error) {
-    if (error.message.includes("Failed to fetch")) {
-      throw new Error("Unable to connect to the backend server.");
-    }
-    throw error;
+    const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
+    throw new Error(errorMessage || "Failed to fetch student profile.");
   }
 };
 
@@ -66,24 +37,11 @@ export const fetchStudentProfile = async (id) => {
  */
 export const fetchStudentProfileByUserId = async (userId) => {
   try {
-    const response = await fetch(`/api/students/user/${userId}`);
-    let data;
-    try {
-      data = await response.json();
-    } catch (parseError) {
-      throw new Error(`API Error: Received invalid response from server (Status ${response.status}).`);
-    }
-
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to fetch student profile.");
-    }
-
-    return data;
+    const response = await API.get(`/students/user/${userId}`);
+    return response.data;
   } catch (error) {
-    if (error.message.includes("Failed to fetch")) {
-      throw new Error("Unable to connect to the backend server.");
-    }
-    throw error;
+    const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
+    throw new Error(errorMessage || "Failed to fetch student profile.");
   }
 };
 
@@ -92,30 +50,10 @@ export const fetchStudentProfileByUserId = async (userId) => {
  */
 export const updateStudentProfile = async (id, profileData) => {
   try {
-    const response = await fetch(`/api/students/profile/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(profileData),
-    });
-
-    let data;
-    try {
-      data = await response.json();
-    } catch (parseError) {
-      throw new Error(`API Error: Received invalid response from server (Status ${response.status}).`);
-    }
-
-    if (!response.ok) {
-      throw new Error(data.message || "Something went wrong while updating the profile.");
-    }
-
-    return data;
+    const response = await API.put(`/students/profile/${id}`, profileData);
+    return response.data;
   } catch (error) {
-    if (error.message.includes("Failed to fetch")) {
-      throw new Error("Unable to connect to the backend server.");
-    }
-    throw error;
+    const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
+    throw new Error(errorMessage || "Something went wrong while updating the profile.");
   }
 };
