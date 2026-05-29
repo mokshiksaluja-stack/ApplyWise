@@ -47,6 +47,7 @@ import Analytics from './pages/Analytics';
 import MessageDetails from './pages/MessageDetails';
 import Students from './pages/Students';
 import CoordinatorMonitor from './pages/admin/CoordinatorMonitor';
+import JobDetail from './pages/JobDetail';
 
 function App() {
   return (
@@ -60,6 +61,7 @@ function App() {
                 <Route path="/login"  element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/" element={<Navigate to="/login" replace />} />
+                <Route path="/job/:id" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
 
                 {/* ── Student (role-gated) ────────────────────── */}
                 <Route
